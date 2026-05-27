@@ -1,0 +1,23 @@
+# Local/cache files
+__pycache__/
+__MACOSX/
+.Rhistory
+.RData
+.Rproj.user/
+
+# Keep potentially private or copyrighted reference material off the public repo.
+Application docs/
+Literatures/
+Report_examples/
+Research_Project_handbook_HDA.pdf
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Generated simulation outputs
+*_results.csv
+*_summary.csv
+*_example.csv
+simulation_regression_*.png
