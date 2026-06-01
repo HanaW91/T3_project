@@ -9,18 +9,23 @@ categorical predictors generated using percentile cutoffs.
 
 ## Files
 
-- `run_fake_simulate_regression_demo.R`: direct familiarisation script using
+- `code/`: R scripts and analysis code.
+- `results/`: generated CSV result tables.
+- `plots/`: generated figures and plots.
+- `code/run_fake_simulate_regression_demo.R`: direct familiarisation script using
   `fake::SimulateRegression` and `fake::SimulateGraphical`.
-- `run_fake_percentile_adaptation.R`: prototype showing where percentile-based
-  binary conversion can be inserted into the `fake` workflow before calling
-  `fake::SimulateRegression(xdata = modified_X)`.
+- `code/run_fake_percentile_adaptation.R`: prototype showing where
+  percentile-based binary conversion can be inserted into the `fake` workflow
+  before calling `fake::SimulateRegression(xdata = modified_X)`.
+- `code/run_fake_toy_benchmark.R`: toy LASSO benchmark using fake data,
+  multiple scaling methods, and a 10% active predictor setting.
 
 ## Running in Positron
 
 Open this folder in Positron and run:
 
 ```r
-source("run_fake_simulate_regression_demo.R")
+source("code/run_fake_simulate_regression_demo.R")
 ```
 
 This directly runs the requested `fake::SimulateRegression` framework.
@@ -28,8 +33,35 @@ This directly runs the requested `fake::SimulateRegression` framework.
 To run the percentile-based adaptation prototype:
 
 ```r
-source("run_fake_percentile_adaptation.R")
+source("code/run_fake_percentile_adaptation.R")
 ```
+
+To run a toy LASSO performance benchmark across scaling methods:
+
+```r
+source("code/run_fake_toy_benchmark.R")
+```
+
+This writes:
+
+- `results/fake_toy_benchmark_results.csv`: one row per seed, scaling method,
+  and toy data setting.
+- `results/fake_toy_benchmark_summary.csv`: average LASSO performance for each
+  scaling combination.
+
+The benchmark records prediction metrics (`rmse`, `mae`, `r_squared`) and
+variable-selection metrics (`precision`, `recall`, `f1_score`, `sensitivity`,
+`false_discovery_rate`, and `specificity`).
+
+The toy benchmark starts with `n = 1000`, `pk = 100`, and `nu_xy = 0.10`,
+matching the first baseline setting suggested for getting a feel for
+performance.
+
+The scaling methods are:
+
+- `none`: no manual scaling.
+- `zscore`: subtract the mean and divide by one standard deviation.
+- `2sd`: subtract the mean and divide by two standard deviations.
 
 The scripts use `fake` for the package demonstration and `glmnet` for LASSO
 regression. If needed, install them with:
