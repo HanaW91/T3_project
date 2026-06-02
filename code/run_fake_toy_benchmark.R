@@ -139,7 +139,8 @@ simulate_one_dataset <- function(seed,
                                  binary_fraction = 0.5,
                                  binary_top_fraction = 0.2,
                                  nu_xy = 0.10,
-                                 ev_xy = 0.7) {
+                                 ev_xy = 0.7,
+                                 ev_xx = 0.5) {
   set.seed(seed)
 
   x_graph <- fake::SimulateGraphical(
@@ -147,6 +148,7 @@ simulate_one_dataset <- function(seed,
     pk = pk,
     nu_within = 0.8,
     nu_between = 0,
+    ev_xx = ev_xx,
     v_sign = -1
   )
 
@@ -178,14 +180,18 @@ simulate_one_dataset <- function(seed,
 
 run_one_benchmark <- function(seed,
                               scaling_method,
-                              binary_fraction,
                               binary_top_fraction,
-                              nu_xy) {
+                              nu_xy,
+                              ev_xy,
+                              ev_xx,
+                              binary_fraction = 0.5) {
   dat <- simulate_one_dataset(
     seed = seed,
     binary_fraction = binary_fraction,
     binary_top_fraction = binary_top_fraction,
-    nu_xy = nu_xy
+    nu_xy = nu_xy,
+    ev_xy = ev_xy,
+    ev_xx = ev_xx
   )
 
   set.seed(seed + 2000)
@@ -217,6 +223,8 @@ run_one_benchmark <- function(seed,
       binary_fraction = binary_fraction,
       binary_top_fraction = binary_top_fraction,
       nu_xy = nu_xy,
+      ev_xy = ev_xy,
+      ev_xx = ev_xx,
       binary_predictors = length(dat$binary_columns),
       lambda_1se = fit$lambda,
       elapsed_seconds = unname(elapsed[["elapsed"]])
@@ -229,15 +237,18 @@ run_one_benchmark <- function(seed,
 run_toy_benchmark <- function(
     seeds = 1:5,
     scaling_methods = c("none", "zscore", "2sd"),
-    binary_fractions = c(0, 0.5),
-    binary_top_fractions = c(0.2),
-    nu_xy_values = c(0.10)) {
+    binary_top_fractions = c(0.5, 0.2, 0.1, 0.05),
+    nu_xy_values = c(0.10),
+    ev_xy_values = c(0.3, 0.5, 0.7),
+    ev_xx_values = c(0.1, 0.5, 0.9),
+    binary_fraction = 0.5) {
   grid <- expand.grid(
     seed = seeds,
     scaling_method = scaling_methods,
-    binary_fraction = binary_fractions,
     binary_top_fraction = binary_top_fractions,
     nu_xy = nu_xy_values,
+    ev_xy = ev_xy_values,
+    ev_xx = ev_xx_values,
     stringsAsFactors = FALSE
   )
 
@@ -248,9 +259,11 @@ run_toy_benchmark <- function(
     results[[i]] <- run_one_benchmark(
       seed = grid$seed[i],
       scaling_method = grid$scaling_method[i],
-      binary_fraction = grid$binary_fraction[i],
       binary_top_fraction = grid$binary_top_fraction[i],
-      nu_xy = grid$nu_xy[i]
+      nu_xy = grid$nu_xy[i],
+      ev_xy = grid$ev_xy[i],
+      ev_xx = grid$ev_xx[i],
+      binary_fraction = binary_fraction
     )
   }
 
@@ -273,7 +286,7 @@ summary_results <- aggregate(
     false_discovery_rate,
     specificity
   ) ~
-    scaling_method + binary_fraction + binary_top_fraction + nu_xy,
+    scaling_method + binary_fraction + binary_top_fraction + nu_xy + ev_xy + ev_xx,
   data = benchmark_results,
   FUN = mean
 )

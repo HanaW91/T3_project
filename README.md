@@ -18,7 +18,8 @@ categorical predictors generated using percentile cutoffs.
   percentile-based binary conversion can be inserted into the `fake` workflow
   before calling `fake::SimulateRegression(xdata = modified_X)`.
 - `code/run_fake_toy_benchmark.R`: toy LASSO benchmark using fake data,
-  multiple scaling methods, and a 10% active predictor setting.
+  multiple scaling methods, and scenario settings for noise, predictor
+  correlation, and binary split imbalance.
 
 ## Running in Positron
 
@@ -42,6 +43,12 @@ To run a toy LASSO performance benchmark across scaling methods:
 source("code/run_fake_toy_benchmark.R")
 ```
 
+To create plots from the benchmark summary:
+
+```r
+source("code/plot_fake_toy_benchmark_results.R")
+```
+
 This writes:
 
 - `results/fake_toy_benchmark_results.csv`: one row per seed, scaling method,
@@ -53,9 +60,26 @@ The benchmark records prediction metrics (`rmse`, `mae`, `r_squared`) and
 variable-selection metrics (`precision`, `recall`, `f1_score`, `sensitivity`,
 `false_discovery_rate`, and `specificity`).
 
+The plotting script saves:
+
+- `plots/precision_by_correlation.png`
+- `plots/recall_by_correlation.png`
+- `plots/f1_by_scaling.png`
+- `plots/r2_by_signal.png`
+- `plots/precision_recall_tradeoff.png`
+
 The toy benchmark starts with `n = 1000`, `pk = 100`, and `nu_xy = 0.10`,
 matching the first baseline setting suggested for getting a feel for
-performance.
+performance. The proportion of binary predictors is fixed for now; later work
+can vary the proportion of categorical or binary predictors as a separate
+scenario.
+
+The current scenario parameters are:
+
+- `ev_xy`: outcome signal/noise, using `0.3`, `0.5`, and `0.7`.
+- `ev_xx`: predictor correlation strength, using `0.1`, `0.5`, and `0.9`.
+- `binary_top_fraction`: binary split imbalance, using `0.5`, `0.2`, `0.1`,
+  and `0.05`.
 
 The scaling methods are:
 
