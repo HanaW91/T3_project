@@ -26,7 +26,7 @@ binarise_by_percentile <- function(x, top_fraction = 0.2) {
 }
 
 make_some_predictors_binary <- function(X,
-                                        binary_fraction = 0.5,
+                                        binary_fraction = 1.0,
                                         binary_top_fraction = 0.2,
                                         seed = 1) {
   set.seed(seed)
@@ -135,8 +135,8 @@ fit_lasso <- function(x_train, y_train, x_test) {
 
 simulate_one_dataset <- function(seed,
                                  n = 1000,
-                                 pk = rep(20, 5),
-                                 binary_fraction = 0.5,
+                                 pk = 100,
+                                 binary_fraction = 1.0,
                                  binary_top_fraction = 0.2,
                                  nu_xy = 0.10,
                                  ev_xy = 0.7,
@@ -184,7 +184,7 @@ run_one_benchmark <- function(seed,
                               nu_xy,
                               ev_xy,
                               ev_xx,
-                              binary_fraction = 0.5) {
+                              binary_fraction = 1.0) {
   dat <- simulate_one_dataset(
     seed = seed,
     binary_fraction = binary_fraction,
@@ -240,8 +240,8 @@ run_toy_benchmark <- function(
     binary_top_fractions = c(0.5, 0.2, 0.1, 0.05),
     nu_xy_values = c(0.10),
     ev_xy_values = c(0.3, 0.5, 0.7),
-    ev_xx_values = c(0.1, 0.5, 0.9),
-    binary_fraction = 0.5) {
+    ev_xx_values = c(0.4, 0.5, 0.7, 0.9),
+    binary_fraction = 1.0) {
   grid <- expand.grid(
     seed = seeds,
     scaling_method = scaling_methods,

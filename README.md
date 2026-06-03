@@ -67,17 +67,31 @@ The plotting script saves:
 - `plots/f1_by_scaling.png`
 - `plots/r2_by_signal.png`
 - `plots/precision_recall_tradeoff.png`
+- `plots/precision_by_split.png`
+- `plots/recall_by_split.png`
+- `plots/f1_by_split.png`
+- `plots/split_metric_bands.png`
+- `plots/noise_analysis_by_scaling.png`
+- `plots/scaling_analysis.png`
+- `plots/split_metric_bands_evxy_0_3.png`
+- `plots/split_metric_bands_evxy_0_5.png`
+- `plots/split_metric_bands_evxy_0_7.png`
+- `plots/scaling_by_correlation_evxy_0_3.png`
+- `plots/scaling_by_correlation_evxy_0_5.png`
+- `plots/scaling_by_correlation_evxy_0_7.png`
 
 The toy benchmark starts with `n = 1000`, `pk = 100`, and `nu_xy = 0.10`,
 matching the first baseline setting suggested for getting a feel for
-performance. The proportion of binary predictors is fixed for now; later work
-can vary the proportion of categorical or binary predictors as a separate
-scenario.
+performance. All predictors are converted to binary for now
+(`binary_fraction = 1.0`) so the initial focus is on binary split imbalance.
+Later work can vary the proportion of categorical, binary, and continuous
+predictors as a separate scenario.
 
 The current scenario parameters are:
 
 - `ev_xy`: outcome signal/noise, using `0.3`, `0.5`, and `0.7`.
-- `ev_xx`: predictor correlation strength, using `0.1`, `0.5`, and `0.9`.
+- `ev_xx`: predictor correlation strength, using `0.4`, `0.5`, `0.7`, and
+  `0.9`.
 - `binary_top_fraction`: binary split imbalance, using `0.5`, `0.2`, `0.1`,
   and `0.05`.
 
