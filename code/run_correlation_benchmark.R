@@ -1,10 +1,5 @@
-# Toy benchmark for fake-generated regression data.
-#
-# Goal:
-# - Generate one toy fake dataset per seed/scenario.
-# - Try several scaling methods.
-# - Fit LASSO with several scaling methods.
-# - Save prediction and variable-selection performance in one results table.
+# Correlation-focused benchmark using fake-generated regression data.
+# Main check: compare scaling methods across predictor-correlation settings.
 
 required_packages <- c("fake", "glmnet")
 missing_packages <- required_packages[
@@ -26,8 +21,8 @@ binarise_by_percentile <- function(x, top_fraction = 0.2) {
 }
 
 make_some_predictors_binary <- function(X,
-                                        binary_fraction = 1.0,
-                                        binary_top_fraction = 0.2,
+                                        binary_fraction = 0.5,
+                                        binary_top_fraction = 0.05,
                                         pk_imbalance_fraction = 0.2,
                                         balanced_top_fraction = 0.5,
                                         seed = 1) {
@@ -104,10 +99,7 @@ scale_train_test <- function(x_train,
     "/"
   )
 
-  list(
-    train = scaled_train,
-    test = scaled_test
-  )
+  list(train = scaled_train, test = scaled_test)
 }
 
 selection_metrics <- function(selected, active, p) {
@@ -136,7 +128,6 @@ selection_metrics <- function(selected, active, p) {
     precision = precision,
     recall = recall,
     f1_score = f1_score,
-    sensitivity = tp / max(length(active), 1),
     false_discovery_rate = fp / max(length(selected), 1),
     specificity = tn / max(p - length(active), 1)
   )
@@ -171,24 +162,31 @@ fit_lasso <- function(x_train,
     nlambda = nlambda
   )
 
-  beta_hat <- as.matrix(stats::coef(fit, s = "lambda.1se"))[-1, 1]
+  extract_fit <- function(lambda_name) {
+    beta_hat <- as.matrix(stats::coef(fit, s = lambda_name))[-1, 1]
+
+    list(
+      prediction = as.numeric(stats::predict(fit, newx = x_test, s = lambda_name)),
+      selected = which(abs(beta_hat) > 1e-8),
+      lambda = fit[[lambda_name]]
+    )
+  }
 
   list(
-    prediction = as.numeric(stats::predict(fit, newx = x_test, s = "lambda.1se")),
-    selected = which(abs(beta_hat) > 1e-8),
-    lambda = fit$lambda.1se
+    cv_lasso_min = extract_fit("lambda.min"),
+    cv_lasso_1se = extract_fit("lambda.1se")
   )
 }
 
 simulate_one_dataset <- function(seed,
                                  n = 1000,
                                  pk = 100,
-                                 binary_fraction = 1.0,
-                                 binary_top_fraction = 0.2,
+                                 binary_fraction = 0.5,
+                                 binary_top_fraction = 0.05,
                                  pk_imbalance_fraction = 0.2,
                                  nu_xy = 0.10,
                                  ev_xy = 0.7,
-                                 ev_xx = 0.5) {
+                                 ev_xx = 0.4) {
   set.seed(seed)
 
   x_graph <- fake::SimulateGraphical(
@@ -256,7 +254,7 @@ evaluate_one_scaling <- function(dat,
   )
 
   elapsed <- system.time({
-    fit <- fit_lasso(
+    fits <- fit_lasso(
       x_train = scaled$train,
       y_train = y_train,
       x_test = scaled$test,
@@ -266,40 +264,47 @@ evaluate_one_scaling <- function(dat,
     )
   })
 
-  cbind(
-    data.frame(
-      seed = seed,
-      algorithm = "lasso",
-      scaling_method = scaling_method,
-      n = nrow(dat$x),
-      p = ncol(dat$x),
-      binary_fraction = binary_fraction,
-      binary_top_fraction = binary_top_fraction,
-      pk_imbalance_fraction = pk_imbalance_fraction,
-      nu_xy = nu_xy,
-      ev_xy = ev_xy,
-      ev_xx = ev_xx,
-      binary_predictors = length(dat$binary_columns),
-      imbalanced_predictors = length(dat$imbalanced_columns),
-      balanced_predictors = length(dat$balanced_columns),
-      lambda_1se = fit$lambda,
-      elapsed_seconds = unname(elapsed[["elapsed"]])
-    ),
-    prediction_metrics(observed = y_test, predicted = fit$prediction),
-    selection_metrics(selected = fit$selected, active = dat$active, p = ncol(dat$x))
-  )
+  rows <- lapply(names(fits), function(algorithm_name) {
+    fit <- fits[[algorithm_name]]
+
+    cbind(
+      data.frame(
+        seed = seed,
+        algorithm = algorithm_name,
+        scaling_method = scaling_method,
+        n = nrow(dat$x),
+        p = ncol(dat$x),
+        binary_fraction = binary_fraction,
+        binary_top_fraction = binary_top_fraction,
+        pk_imbalance_fraction = pk_imbalance_fraction,
+        nu_xy = nu_xy,
+        ev_xy = ev_xy,
+        ev_xx = ev_xx,
+        binary_predictors = length(dat$binary_columns),
+        imbalanced_predictors = length(dat$imbalanced_columns),
+        balanced_predictors = length(dat$balanced_columns),
+        continuous_predictors = ncol(dat$x) - length(dat$binary_columns),
+        lambda = fit$lambda,
+        elapsed_seconds = unname(elapsed[["elapsed"]])
+      ),
+      prediction_metrics(observed = y_test, predicted = fit$prediction),
+      selection_metrics(selected = fit$selected, active = dat$active, p = ncol(dat$x))
+    )
+  })
+
+  do.call(rbind, rows)
 }
 
-run_one_scenario <- function(seed,
-                             scaling_methods,
-                             binary_top_fraction,
-                             nu_xy,
-                             ev_xy,
-                             ev_xx,
-                             binary_fraction = 1.0,
-                             pk_imbalance_fraction = 0.2,
-                             nfolds = 5,
-                             nlambda = 50) {
+run_one_correlation_scenario <- function(seed,
+                                         scaling_methods,
+                                         binary_fraction,
+                                         binary_top_fraction,
+                                         pk_imbalance_fraction,
+                                         nu_xy,
+                                         ev_xy,
+                                         ev_xx,
+                                         nfolds = 5,
+                                         nlambda = 50) {
   dat <- simulate_one_dataset(
     seed = seed,
     binary_fraction = binary_fraction,
@@ -341,33 +346,42 @@ run_one_scenario <- function(seed,
   do.call(rbind, results)
 }
 
-run_toy_benchmark <- function(
+run_correlation_benchmark <- function(
     seeds = 1:10,
     scaling_methods = c("none", "zscore", "2sd"),
-    binary_top_fractions = c(0.5, 0.2, 0.1, 0.05),
-    nu_xy_values = c(0.10),
-    ev_xy_values = c(0.3, 0.5, 0.7),
-    ev_xx_values = c(0.4, 0.5, 0.7, 0.9),
-    binary_fraction_values = c(1.0, 0.5),
-    pk_imbalance_fractions = c(0.1, 0.2, 0.5, 0.8),
+    binary_fraction_values = c(0.5),
+    binary_top_fraction = 0.05,
+    pk_imbalance_fraction = 0.2,
+    nu_xy = 0.10,
+    ev_xy_values = c(0.1, 0.3, 0.5, 0.7, 0.9),
+    ev_xx_values = c(0.5, 0.7, 0.9),
     nfolds = 5,
     nlambda = 50) {
   grid <- expand.grid(
     seed = seeds,
-    binary_top_fraction = binary_top_fractions,
-    pk_imbalance_fraction = pk_imbalance_fractions,
-    nu_xy = nu_xy_values,
+    binary_fraction = binary_fraction_values,
     ev_xy = ev_xy_values,
     ev_xx = ev_xx_values,
-    binary_fraction = binary_fraction_values,
     stringsAsFactors = FALSE
+  )
+
+  message(
+    "Correlation benchmark setup: ",
+    nrow(grid),
+    " generated datasets x ",
+    length(scaling_methods),
+    " scaling methods x 2 CV lambda choices = ",
+    nrow(grid) * length(scaling_methods),
+    " CV fits and ",
+    nrow(grid) * length(scaling_methods) * 2,
+    " result rows."
   )
 
   results <- vector("list", nrow(grid))
 
   for (i in seq_len(nrow(grid))) {
     message(
-      "Running scenario ",
+      "Running correlation scenario ",
       i,
       " of ",
       nrow(grid),
@@ -375,15 +389,16 @@ run_toy_benchmark <- function(
       length(scaling_methods),
       " scaling methods)"
     )
-    results[[i]] <- run_one_scenario(
+
+    results[[i]] <- run_one_correlation_scenario(
       seed = grid$seed[i],
       scaling_methods = scaling_methods,
-      binary_top_fraction = grid$binary_top_fraction[i],
-      nu_xy = grid$nu_xy[i],
+      binary_fraction = grid$binary_fraction[i],
+      binary_top_fraction = binary_top_fraction,
+      pk_imbalance_fraction = pk_imbalance_fraction,
+      nu_xy = nu_xy,
       ev_xy = grid$ev_xy[i],
       ev_xx = grid$ev_xx[i],
-      binary_fraction = grid$binary_fraction[i],
-      pk_imbalance_fraction = grid$pk_imbalance_fraction[i],
       nfolds = nfolds,
       nlambda = nlambda
     )
@@ -392,42 +407,32 @@ run_toy_benchmark <- function(
   do.call(rbind, results)
 }
 
-benchmark_results <- run_toy_benchmark()
+correlation_results <- run_correlation_benchmark()
 
-print(benchmark_results)
+print(head(correlation_results))
 
-summary_results <- aggregate(
-  cbind(
-    rmse,
-    mae,
-    r_squared,
-    precision,
-    recall,
-    f1_score,
-    sensitivity,
-    false_discovery_rate,
-    specificity
-  ) ~
-    scaling_method + binary_fraction + binary_top_fraction +
+correlation_summary <- aggregate(
+  cbind(f1_score, precision, recall) ~
+    algorithm + scaling_method + binary_fraction + binary_top_fraction +
       pk_imbalance_fraction + nu_xy + ev_xy + ev_xx,
-  data = benchmark_results,
+  data = correlation_results,
   FUN = mean
 )
 
-print(summary_results)
+print(correlation_summary)
 
 if (!dir.exists("results")) {
   dir.create("results")
 }
 
 utils::write.csv(
-  benchmark_results,
-  file = file.path("results", "fake_toy_benchmark_results.csv"),
+  correlation_results,
+  file = file.path("results", "correlation_benchmark_results.csv"),
   row.names = FALSE
 )
 
 utils::write.csv(
-  summary_results,
-  file = file.path("results", "fake_toy_benchmark_summary.csv"),
+  correlation_summary,
+  file = file.path("results", "correlation_benchmark_summary.csv"),
   row.names = FALSE
 )

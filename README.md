@@ -1,124 +1,118 @@
-# T3 Project: Simulation Regression Framework
+# T3 Project
 
-This project explores simulation-based benchmarking for variable selection,
-using the `fake` R package as the main simulation framework.
+Simulation work for looking at category prevalence, scaling, and variable
+selection with `fake` and LASSO-type methods.
 
-The current focus is to understand `fake::SimulateRegression()` and how it can
-be adapted for the project aim: studying variable selection with binary or
-categorical predictors generated using percentile cutoffs.
+The current code is still a toy/simulation setup, but the workflow now follows
+the main structure I want to use:
 
-## Files
+1. Generate predictors with `fake::SimulateGraphical()`.
+2. Convert selected predictors into binary variables using percentile cutoffs.
+3. Generate the outcome with `fake::SimulateRegression(xdata = modified_X)`.
+4. Fit LASSO models and compare selected predictors with the known true active
+   predictors.
 
-- `code/`: R scripts and analysis code.
-- `results/`: generated CSV result tables.
-- `plots/`: generated figures and plots.
-- `code/run_fake_simulate_regression_demo.R`: direct familiarisation script using
-  `fake::SimulateRegression` and `fake::SimulateGraphical`.
-- `code/run_fake_percentile_adaptation.R`: prototype showing where
-  percentile-based binary conversion can be inserted into the `fake` workflow
-  before calling `fake::SimulateRegression(xdata = modified_X)`.
-- `code/run_fake_toy_benchmark.R`: toy LASSO benchmark using fake data,
-  multiple scaling methods, and scenario settings for noise, predictor
-  correlation, and binary split imbalance.
+## Folders
 
-## Running in Positron
+- `code/`: R scripts.
+- `results/`: CSV outputs from benchmark runs.
+- `plots/`: generated figures.
+- `meeting slides/`: slides used for weekly meetings.
 
-Open this folder in Positron and run:
+Generated CSV files and plots are not the main source code, so they do not all
+need to be committed every time.
 
-```r
-source("code/run_fake_simulate_regression_demo.R")
-```
+## Main Scripts
 
-This directly runs the requested `fake::SimulateRegression` framework.
-
-To run the percentile-based adaptation prototype:
+Run scripts from the project root:
 
 ```r
-source("code/run_fake_percentile_adaptation.R")
+setwd("C:/Users/user/OneDrive/Master/T3_project")
 ```
 
-To run a toy LASSO performance benchmark across scaling methods:
+Scaling benchmark:
 
 ```r
-source("code/run_fake_toy_benchmark.R")
+source("code/run_scaling_benchmark.R")
+source("code/plot_scaling_benchmark_results.R")
 ```
 
-To create plots from the benchmark summary:
+Noise / predictor-mix check:
 
 ```r
-source("code/plot_fake_toy_benchmark_results.R")
+source("code/run_noise_benchmark.R")
+source("code/plot_noise_benchmark_results.R")
 ```
 
-This writes:
-
-- `results/fake_toy_benchmark_results.csv`: one row per seed, scaling method,
-  and toy data setting.
-- `results/fake_toy_benchmark_summary.csv`: average LASSO performance for each
-  scaling combination.
-
-The benchmark records prediction metrics (`rmse`, `mae`, `r_squared`) and
-variable-selection metrics (`precision`, `recall`, `f1_score`, `sensitivity`,
-`false_discovery_rate`, and `specificity`).
-
-The plotting script saves:
-
-- `plots/precision_by_correlation.png`
-- `plots/recall_by_correlation.png`
-- `plots/f1_by_scaling.png`
-- `plots/r2_by_signal.png`
-- `plots/precision_recall_tradeoff.png`
-- `plots/precision_by_split.png`
-- `plots/recall_by_split.png`
-- `plots/f1_by_split.png`
-- `plots/split_metric_bands.png`
-- `plots/noise_analysis_by_scaling.png`
-- `plots/scaling_analysis.png`
-- `plots/split_metric_bands_evxy_0_3.png`
-- `plots/split_metric_bands_evxy_0_5.png`
-- `plots/split_metric_bands_evxy_0_7.png`
-- `plots/scaling_by_correlation_evxy_0_3.png`
-- `plots/scaling_by_correlation_evxy_0_5.png`
-- `plots/scaling_by_correlation_evxy_0_7.png`
-
-The toy benchmark starts with `n = 1000`, `pk = 100`, and `nu_xy = 0.10`,
-matching the first baseline setting suggested for getting a feel for
-performance. All predictors are converted to binary for now
-(`binary_fraction = 1.0`) so the initial focus is on binary split imbalance.
-Later work can vary the proportion of categorical, binary, and continuous
-predictors as a separate scenario.
-
-The current scenario parameters are:
-
-- `ev_xy`: outcome signal/noise, using `0.3`, `0.5`, and `0.7`.
-- `ev_xx`: predictor correlation strength, using `0.4`, `0.5`, `0.7`, and
-  `0.9`.
-- `binary_top_fraction`: binary split imbalance, using `0.5`, `0.2`, `0.1`,
-  and `0.05`.
-
-The scaling methods are:
-
-- `none`: no manual scaling.
-- `zscore`: subtract the mean and divide by one standard deviation.
-- `2sd`: subtract the mean and divide by two standard deviations.
-
-The scripts use `fake` for the package demonstration and `glmnet` for LASSO
-regression. If needed, install them with:
+Correlation-focused scaling plot:
 
 ```r
-install.packages(c("fake", "glmnet"))
+source("code/run_correlation_benchmark.R")
+source("code/plot_scaling_by_correlation.R")
 ```
 
-## Current Research Direction
+Imbalance benchmark:
 
-The planned workflow is:
+```r
+source("code/run_imbalance_benchmark.R")
+source("code/plot_imbalance_benchmark_results.R")
+```
 
-1. Use `fake::SimulateGraphical()` to generate correlated continuous predictors.
-2. Convert selected predictors to binary/categorical form using percentile
-   cutoffs, for example 50/50 or 80/20 binary splits.
-3. Use `fake::SimulateRegression(xdata = modified_X)` to generate outcomes and
-   ground truth (`theta`, `beta`).
-4. Fit variable selection methods and compare selected predictors with the known
-   active predictors.
+Binary creation sanity check:
 
-The current code is a familiarisation/prototype step, not the final simulation
-study.
+```r
+source("code/sanity_check.R")
+```
+
+## Current Toy Setup
+
+Baseline size:
+
+- `n = 1000`
+- `pk = 100`
+- `nu_xy = 0.10`, so around 10 true active predictors
+- 10 seeds for current exploratory runs
+
+Main settings currently varied:
+
+- `ev_xy`: signal strength / outcome explained variance
+- `ev_xx`: predictor correlation
+- `binary_top_fraction`: rare-category split for imbalanced binary predictors
+- `pk_imbalance_fraction`: proportion of binary predictors given the rare split
+- scaling: `none`, `zscore`, `2sd`
+
+The `2sd` scaling follows the literature setup I am using here: it scales
+continuous predictors only, while binary predictors stay coded as `0/1`.
+
+## Model Outputs
+
+The current LASSO runs use `glmnet::cv.glmnet()` with manual scaling applied
+before fitting, so `standardize = FALSE`.
+
+For each CV fit, the scripts currently record:
+
+- `cv_lasso_min`, using `lambda.min`
+- `cv_lasso_1se`, using `lambda.1se`
+
+Main variable-selection metrics:
+
+- precision
+- recall
+- F1 score
+- selected variables
+- true positives / false positives / false negatives
+
+Prediction metrics are also kept, including RMSE and R-squared.
+
+## Notes
+
+The focused scripts are easier to use than putting every scenario in one big
+file:
+
+- scaling analysis
+- noise / predictor-mix check
+- correlation split
+- imbalance analysis
+
+This keeps each result plot tied to one question, which makes the weekly
+meeting slides easier to explain.

@@ -106,6 +106,16 @@ save_plot <- function(plot, filename, width = 8, height = 5) {
   )
 }
 
+extract_aggregate_metric_values <- function(aggregate_result, metric_name) {
+  values <- aggregate_result[[metric_name]]
+
+  if (is.matrix(values)) {
+    return(values)
+  }
+
+  do.call(rbind, values)
+}
+
 precision_by_correlation <- ggplot2::ggplot(
   summary_results,
   ggplot2::aes(
@@ -293,7 +303,10 @@ make_metric_band_data <- function(data, metric_name) {
     }
   )
 
-  metric_values <- do.call(rbind, aggregate_result[[metric_name]])
+  metric_values <- extract_aggregate_metric_values(
+    aggregate_result,
+    metric_name
+  )
   aggregate_result[[metric_name]] <- NULL
   data.frame(
     aggregate_result,
@@ -312,6 +325,52 @@ metric_band_data <- rbind(
 
 metric_band_data$metric <- factor(
   metric_band_data$metric,
+  levels = c("f1_score", "recall", "precision"),
+  labels = c("F1 score", "Recall", "Precision")
+)
+
+make_pk_imbalance_metric_data <- function(data, metric_name) {
+  formula <- stats::as.formula(
+    paste(metric_name, "~ binary_top_fraction + pk_imbalance_fraction + ev_xy + ev_xy_label")
+  )
+
+  aggregate_result <- stats::aggregate(
+    formula,
+    data = data,
+    FUN = function(x) {
+      n <- length(x)
+      mean_x <- mean(x)
+      se_x <- stats::sd(x) / sqrt(n)
+      c(
+        mean = mean_x,
+        lower = max(0, mean_x - 1.96 * se_x),
+        upper = min(1, mean_x + 1.96 * se_x)
+      )
+    }
+  )
+
+  metric_values <- extract_aggregate_metric_values(
+    aggregate_result,
+    metric_name
+  )
+  aggregate_result[[metric_name]] <- NULL
+  data.frame(
+    aggregate_result,
+    metric = metric_name,
+    mean = metric_values[, "mean"],
+    lower = metric_values[, "lower"],
+    upper = metric_values[, "upper"]
+  )
+}
+
+pk_imbalance_metric_data <- rbind(
+  make_pk_imbalance_metric_data(benchmark_results, "f1_score"),
+  make_pk_imbalance_metric_data(benchmark_results, "recall"),
+  make_pk_imbalance_metric_data(benchmark_results, "precision")
+)
+
+pk_imbalance_metric_data$metric <- factor(
+  pk_imbalance_metric_data$metric,
   levels = c("f1_score", "recall", "precision"),
   labels = c("F1 score", "Recall", "Precision")
 )
@@ -336,7 +395,10 @@ make_noise_metric_data <- function(data, metric_name) {
     }
   )
 
-  metric_values <- do.call(rbind, aggregate_result[[metric_name]])
+  metric_values <- extract_aggregate_metric_values(
+    aggregate_result,
+    metric_name
+  )
   aggregate_result[[metric_name]] <- NULL
   data.frame(
     aggregate_result,
@@ -367,7 +429,10 @@ make_scaling_correlation_metric_data <- function(data, metric_name) {
     }
   )
 
-  metric_values <- do.call(rbind, aggregate_result[[metric_name]])
+  metric_values <- extract_aggregate_metric_values(
+    aggregate_result,
+    metric_name
+  )
   aggregate_result[[metric_name]] <- NULL
   data.frame(
     aggregate_result,
@@ -488,6 +553,94 @@ scaling_analysis <- ggplot2::ggplot(
   ggplot2::theme_minimal() +
   ggplot2::theme(legend.position = "none")
 
+scaling_split_metric_data <- rbind(
+  data.frame(
+    scaling_method = benchmark_results$scaling_method,
+    binary_top_fraction = benchmark_results$binary_top_fraction,
+    metric = "F1 score",
+    performance = benchmark_results$f1_score
+  ),
+  data.frame(
+    scaling_method = benchmark_results$scaling_method,
+    binary_top_fraction = benchmark_results$binary_top_fraction,
+    metric = "Recall",
+    performance = benchmark_results$recall
+  ),
+  data.frame(
+    scaling_method = benchmark_results$scaling_method,
+    binary_top_fraction = benchmark_results$binary_top_fraction,
+    metric = "Precision",
+    performance = benchmark_results$precision
+  )
+)
+
+scaling_split_metric_data$scaling_method <- factor(
+  scaling_split_metric_data$scaling_method,
+  levels = c("none", "zscore", "2sd")
+)
+
+scaling_split_metric_data$binary_top_fraction <- factor(
+  scaling_split_metric_data$binary_top_fraction,
+  levels = sort(unique(scaling_split_metric_data$binary_top_fraction)),
+  labels = paste0(
+    "split = ",
+    sort(unique(scaling_split_metric_data$binary_top_fraction))
+  )
+)
+
+scaling_split_metric_data$metric <- factor(
+  scaling_split_metric_data$metric,
+  levels = c("F1 score", "Recall", "Precision")
+)
+
+scaling_by_split <- ggplot2::ggplot(
+  scaling_split_metric_data,
+  ggplot2::aes(
+    x = scaling_method,
+    y = performance,
+    fill = scaling_method
+  )
+) +
+  ggplot2::geom_boxplot(alpha = 0.75, width = 0.6) +
+  ggplot2::facet_grid(metric ~ binary_top_fraction) +
+  ggplot2::labs(
+    title = "Scaling Analysis by Binary Split",
+    subtitle = "Boxplots summarise performance across noise, correlation settings, and seeds",
+    x = "Scaling method",
+    y = "Performance",
+    fill = "Scaling"
+  ) +
+  ggplot2::theme_minimal() +
+  ggplot2::theme(legend.position = "none")
+
+make_scaling_by_split_metric_plot <- function(metric_name, metric_label, filename) {
+  plot_data <- scaling_split_metric_data[
+    scaling_split_metric_data$metric == metric_label,
+  ]
+
+  plot <- ggplot2::ggplot(
+    plot_data,
+    ggplot2::aes(
+      x = scaling_method,
+      y = performance,
+      fill = scaling_method
+    )
+  ) +
+    ggplot2::geom_boxplot(alpha = 0.75, width = 0.6) +
+    ggplot2::facet_wrap(~ binary_top_fraction, nrow = 1) +
+    ggplot2::labs(
+      title = paste("Scaling Analysis by Binary Split -", metric_label),
+      subtitle = "Boxplots summarise performance across noise, correlation settings, and seeds",
+      x = "Scaling method",
+      y = metric_label,
+      fill = "Scaling"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(legend.position = "none")
+
+  save_plot(plot, filename, width = 11, height = 4)
+}
+
 split_metric_bands <- ggplot2::ggplot(
   metric_band_data,
   ggplot2::aes(
@@ -550,6 +703,123 @@ make_single_signal_plot <- function(ev_xy_level, filename) {
   save_plot(plot, filename, width = 11, height = 4)
 }
 
+make_pk_imbalance_by_split_plot <- function(ev_xy_level, filename) {
+  plot_data <- pk_imbalance_metric_data[
+    pk_imbalance_metric_data$ev_xy == ev_xy_level,
+  ]
+  ev_xy_text <- unique(as.character(plot_data$ev_xy_label))
+
+  plot <- ggplot2::ggplot(
+    plot_data,
+    ggplot2::aes(
+      x = binary_top_fraction,
+      y = mean,
+      colour = factor(pk_imbalance_fraction),
+      fill = factor(pk_imbalance_fraction),
+      group = pk_imbalance_fraction
+    )
+  ) +
+    ggplot2::geom_ribbon(
+      ggplot2::aes(ymin = lower, ymax = upper),
+      alpha = 0.18,
+      colour = NA
+    ) +
+    ggplot2::geom_line(linewidth = 1) +
+    ggplot2::geom_point(size = 2) +
+    ggplot2::facet_wrap(~ metric, nrow = 1) +
+    ggplot2::labs(
+      title = paste("Imbalance Analysis -", ev_xy_text),
+      subtitle = "x-axis shows rare-category split; colour shows proportion of predictors affected",
+      x = "Rare category fraction (binary_top_fraction)",
+      y = "Performance",
+      colour = "pk_imbalance_fraction",
+      fill = "pk_imbalance_fraction"
+    ) +
+    ggplot2::theme_minimal()
+
+  save_plot(plot, filename, width = 11, height = 4)
+}
+
+make_scaling_lines_by_split_plot <- function(ev_xy_level, filename) {
+  metric_data <- rbind(
+    data.frame(
+      binary_top_fraction = benchmark_results$binary_top_fraction,
+      pk_imbalance_fraction = benchmark_results$pk_imbalance_fraction,
+      ev_xy = benchmark_results$ev_xy,
+      scaling_method = benchmark_results$scaling_method,
+      metric = "F1 score",
+      performance = benchmark_results$f1_score
+    ),
+    data.frame(
+      binary_top_fraction = benchmark_results$binary_top_fraction,
+      pk_imbalance_fraction = benchmark_results$pk_imbalance_fraction,
+      ev_xy = benchmark_results$ev_xy,
+      scaling_method = benchmark_results$scaling_method,
+      metric = "Recall",
+      performance = benchmark_results$recall
+    ),
+    data.frame(
+      binary_top_fraction = benchmark_results$binary_top_fraction,
+      pk_imbalance_fraction = benchmark_results$pk_imbalance_fraction,
+      ev_xy = benchmark_results$ev_xy,
+      scaling_method = benchmark_results$scaling_method,
+      metric = "Precision",
+      performance = benchmark_results$precision
+    )
+  )
+
+  plot_data <- metric_data[metric_data$ev_xy == ev_xy_level, ]
+  plot_summary <- stats::aggregate(
+    performance ~ binary_top_fraction + pk_imbalance_fraction +
+      scaling_method + metric,
+    data = plot_data,
+    FUN = mean
+  )
+
+  plot_summary$metric <- factor(
+    plot_summary$metric,
+    levels = c("F1 score", "Recall", "Precision")
+  )
+  plot_summary$scaling_method <- factor(
+    plot_summary$scaling_method,
+    levels = c("none", "zscore", "2sd")
+  )
+  plot_summary$pk_imbalance_label <- factor(
+    paste0("pk_imbalance = ", plot_summary$pk_imbalance_fraction),
+    levels = paste0(
+      "pk_imbalance = ",
+      sort(unique(plot_summary$pk_imbalance_fraction))
+    )
+  )
+
+  ev_xy_text <- unique(as.character(
+    benchmark_results$ev_xy_label[benchmark_results$ev_xy == ev_xy_level]
+  ))
+
+  plot <- ggplot2::ggplot(
+    plot_summary,
+    ggplot2::aes(
+      x = binary_top_fraction,
+      y = performance,
+      colour = scaling_method,
+      group = scaling_method
+    )
+  ) +
+    ggplot2::geom_line(linewidth = 1) +
+    ggplot2::geom_point(size = 2) +
+    ggplot2::facet_grid(pk_imbalance_label ~ metric) +
+    ggplot2::labs(
+      title = paste("Scaling Lines by Split Imbalance -", ev_xy_text),
+      subtitle = "Lines show scaling methods; panels show proportion of predictors affected",
+      x = "Rare category fraction (binary_top_fraction)",
+      y = "Mean performance",
+      colour = "Scaling"
+    ) +
+    ggplot2::theme_minimal()
+
+  save_plot(plot, filename, width = 11, height = 8)
+}
+
 make_scaling_by_correlation_plot <- function(ev_xy_level, filename) {
   plot_data <- scaling_correlation_metric_data[
     scaling_correlation_metric_data$ev_xy == ev_xy_level,
@@ -600,11 +870,21 @@ save_plot(f1_by_split, "f1_by_split.png")
 save_plot(split_metric_bands, "split_metric_bands.png", width = 11, height = 8)
 save_plot(noise_analysis_by_scaling, "noise_analysis_by_scaling.png", width = 11, height = 4)
 save_plot(scaling_analysis, "scaling_analysis.png", width = 11, height = 4)
+save_plot(scaling_by_split, "scaling_by_split.png", width = 11, height = 8)
+make_scaling_by_split_metric_plot("f1_score", "F1 score", "scaling_by_split_f1.png")
+make_scaling_by_split_metric_plot("recall", "Recall", "scaling_by_split_recall.png")
+make_scaling_by_split_metric_plot("precision", "Precision", "scaling_by_split_precision.png")
 make_single_signal_plot(0.3, "split_metric_bands_evxy_0_3.png")
 make_single_signal_plot(0.5, "split_metric_bands_evxy_0_5.png")
 make_single_signal_plot(0.7, "split_metric_bands_evxy_0_7.png")
 make_scaling_by_correlation_plot(0.3, "scaling_by_correlation_evxy_0_3.png")
 make_scaling_by_correlation_plot(0.5, "scaling_by_correlation_evxy_0_5.png")
 make_scaling_by_correlation_plot(0.7, "scaling_by_correlation_evxy_0_7.png")
+make_pk_imbalance_by_split_plot(0.3, "pk_imbalance_by_split_evxy_0_3.png")
+make_pk_imbalance_by_split_plot(0.5, "pk_imbalance_by_split_evxy_0_5.png")
+make_pk_imbalance_by_split_plot(0.7, "pk_imbalance_by_split_evxy_0_7.png")
+make_scaling_lines_by_split_plot(0.3, "scaling_lines_by_split_evxy_0_3.png")
+make_scaling_lines_by_split_plot(0.5, "scaling_lines_by_split_evxy_0_5.png")
+make_scaling_lines_by_split_plot(0.7, "scaling_lines_by_split_evxy_0_7.png")
 
 message("Saved plots to the plots/ folder.")
