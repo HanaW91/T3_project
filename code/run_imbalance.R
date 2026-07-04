@@ -351,9 +351,11 @@ simulate_predictor_matrix <- function(n, pk, ev_xx, seed) {
       n = n,
       pk = pk,
       nu_within = 0,
-      nu_between = 0,
-      ev_xx = 1 / pk,
-      v_sign = -1
+      v_within = c(0, 1),
+      v_sign = c(-1, 1),
+      ev_xx = 0,
+      u_list = c(1e-10, 1000),
+      pd_strategy = "min_eigenvalue"
     )
 
     return(x_graph$data)
@@ -362,10 +364,12 @@ simulate_predictor_matrix <- function(n, pk, ev_xx, seed) {
   x_graph <- fake::SimulateGraphical(
     n = n,
     pk = pk,
-    nu_within = 0.8,
-    nu_between = 0,
+    nu_within = 1,
+    v_within = c(0, 1),
+    v_sign = c(-1, 1),
     ev_xx = ev_xx,
-    v_sign = -1
+    u_list = c(1e-10, 1000),
+    pd_strategy = "min_eigenvalue"
   )
 
   x_graph$data
@@ -771,8 +775,8 @@ run_imbalance_benchmark <- function(
     binary_top_fractions = c(0.5, 0.2, 0.1, 0.05),
     pk_imbalance_fractions = c(0.1, 0.2, 0.5, 0.8),
     nu_xy = 0.10,
-    ev_xy_values = c(0.1, 0.3, 0.5, 0.7, 0.9),
-    ev_xx_values = c(0, 0.38, 0.6, 0.9),
+    ev_xy_values = c(0.5, 0.05),
+    ev_xx_values = c(0, 0.1, 0.9),
     nfolds = 5,
     nlambda = 50,
     include_stability = TRUE,
@@ -880,8 +884,8 @@ imbalance_run <- run_imbalance_benchmark(
   seeds = 1:10,
   binary_top_fractions = c(0.5, 0.2, 0.1, 0.05),
   pk_imbalance_fractions = c(0.1, 0.2, 0.5, 0.8),
-  ev_xy_values = c(0.1, 0.3, 0.5, 0.7, 0.9),
-  ev_xx_values = c(0, 0.38, 0.6, 0.9),
+  ev_xy_values = c(0.5, 0.05),
+  ev_xx_values = c(0, 0.1, 0.9),
   stability_repetitions = 25
 )
 imbalance_results <- imbalance_run$results
@@ -935,18 +939,18 @@ if (!dir.exists("results")) {
 
 utils::write.csv(
   imbalance_results,
-  file = file.path("results", "imbalance_stability_results.csv"),
+  file = file.path("results", "imbalance_results.csv"),
   row.names = FALSE
 )
 
 utils::write.csv(
   imbalance_summary,
-  file = file.path("results", "imbalance_stability_summary.csv"),
+  file = file.path("results", "imbalance_summary.csv"),
   row.names = FALSE
 )
 
 utils::write.csv(
   imbalance_predictor_metadata,
-  file = file.path("results", "imbalance_stability_metadata.csv"),
+  file = file.path("results", "imbalance_metadata.csv"),
   row.names = FALSE
 )
