@@ -940,18 +940,18 @@ if (!dir.exists("results")) {
 
 utils::write.csv(
   imbalance_results,
-  file = file.path("results", "imbalance_results.csv"),
+  file = file.path("results", "imbalance_mixed_results.csv"),
   row.names = FALSE
 )
 
 utils::write.csv(
   imbalance_summary,
-  file = file.path("results", "imbalance_summary.csv"),
+  file = file.path("results", "imbalance_mixed_summary.csv"),
   row.names = FALSE
 )
 
 utils::write.csv(
   imbalance_predictor_metadata,
-  file = file.path("results", "imbalance_metadata.csv"),
+  file = file.path("results", "imbalance_mixed_metadata.csv"),
   row.names = FALSE
 )

@@ -10,7 +10,7 @@ result_sets <- list(
   list(
     id = "mixed",
     label = "Mixed predictors",
-    file = file.path("results", "imbalance_results.csv"),
+    file = file.path("results", "imbalance_mixed_results.csv"),
     binary_fraction = 0.5
   ),
   list(
