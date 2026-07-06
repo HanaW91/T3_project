@@ -928,6 +928,7 @@ imbalance_summary <- aggregate(
     algorithm + scaling_method + n + p + binary_fraction + binary_top_fraction +
       pk_imbalance_fraction + nu_xy + ev_xy + ev_xx,
   data = imbalance_results,
+  na.action = na.pass,
   FUN = function(x) mean(x, na.rm = TRUE)
 )
 
