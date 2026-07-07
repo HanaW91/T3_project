@@ -80,6 +80,7 @@ metric_specs <- data.frame(
 
 scaling_levels <- c("none", "zscore", "2sd")
 scaling_labels <- c(none = "No scaling", zscore = "Z-score", `2sd` = "2 SD")
+scaling_symbols <- c(none = 16, zscore = 17, `2sd` = 15)
 algorithm_labels <- c(
   cv_lasso_min = "lambda.min",
   cv_lasso_1se = "lambda.1se",
@@ -265,7 +266,7 @@ plot_metric_panel <- function(plot_data,
         line_data$rarity_x,
         line_data$mean,
         col = line_colour,
-        pch = 16,
+        pch = scaling_symbols[scaling_method],
         cex = 0.85
       )
     }
@@ -419,7 +420,7 @@ plot_method_grid <- function(method_id,
     "center",
     legend = legend_labels,
     col = line_colours[paste(legend_grid$algorithm, legend_grid$scaling_method, sep = "__")],
-    pch = 16,
+    pch = scaling_symbols[legend_grid$scaling_method],
     lty = 1,
     lwd = 2.5,
     ncol = 3,
