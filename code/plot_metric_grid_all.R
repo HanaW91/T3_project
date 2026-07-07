@@ -3,7 +3,7 @@
 # Layout per method:
 #   columns = F1, recall, precision
 #   rows    = no / low / high correlation, repeated for low and high noise
-#   lines   = scaling methods
+#   lines   = algorithm and scaling combinations
 #   x-axis  = rarity severity by default
 
 result_sets <- list(
@@ -80,18 +80,25 @@ metric_specs <- data.frame(
 
 scaling_levels <- c("none", "zscore", "2sd")
 scaling_labels <- c(none = "No scaling", zscore = "Z-score", `2sd` = "2 SD")
-scaling_symbols <- c(none = 16, zscore = 17, `2sd` = 15)
 algorithm_labels <- c(
   cv_lasso_min = "lambda.min",
   cv_lasso_1se = "lambda.1se",
   stability_lasso_ncut_0 = "ncut=0",
   stability_lasso_ncut_3 = "ncut=3"
 )
-algorithm_colours <- c(
-  cv_lasso_min = "#0072B2",
-  cv_lasso_1se = "#D55E00",
-  stability_lasso_ncut_0 = "#009E73",
-  stability_lasso_ncut_3 = "#CC79A7"
+line_colours <- c(
+  cv_lasso_min__none = "#1f77b4",
+  cv_lasso_min__zscore = "#17becf",
+  cv_lasso_min__2sd = "#9467bd",
+  cv_lasso_1se__none = "#ff7f0e",
+  cv_lasso_1se__zscore = "#bcbd22",
+  cv_lasso_1se__2sd = "#d62728",
+  stability_lasso_ncut_0__none = "#2ca02c",
+  stability_lasso_ncut_0__zscore = "#20a386",
+  stability_lasso_ncut_0__2sd = "#8dd3c7",
+  stability_lasso_ncut_3__none = "#e377c2",
+  stability_lasso_ncut_3__zscore = "#f781bf",
+  stability_lasso_ncut_3__2sd = "#7f7f7f"
 )
 
 format_file_value <- function(value) {
@@ -236,8 +243,8 @@ plot_metric_panel <- function(plot_data,
       }
 
       line_data <- line_data[order(line_data$rarity_x), ]
-      line_colour <- algorithm_colours[algorithm]
-      line_type <- match(scaling_method, scaling_levels)
+      line_key <- paste(algorithm, scaling_method, sep = "__")
+      line_colour <- line_colours[line_key]
 
       graphics::polygon(
         x = c(line_data$rarity_x, rev(line_data$rarity_x)),
@@ -250,16 +257,16 @@ plot_metric_panel <- function(plot_data,
         line_data$rarity_x,
         line_data$mean,
         col = line_colour,
-        lty = line_type,
-        lwd = 2.1
+        lty = 1,
+        lwd = 2.4
       )
 
       graphics::points(
         line_data$rarity_x,
         line_data$mean,
         col = line_colour,
-        pch = scaling_symbols[scaling_method],
-        cex = 0.9
+        pch = 16,
+        cex = 0.85
       )
     }
   }
@@ -411,9 +418,9 @@ plot_method_grid <- function(method_id,
   graphics::legend(
     "center",
     legend = legend_labels,
-    col = algorithm_colours[legend_grid$algorithm],
-    pch = scaling_symbols[legend_grid$scaling_method],
-    lty = match(legend_grid$scaling_method, scaling_levels),
+    col = line_colours[paste(legend_grid$algorithm, legend_grid$scaling_method, sep = "__")],
+    pch = 16,
+    lty = 1,
     lwd = 2.5,
     ncol = 3,
     bty = "n",
