@@ -315,7 +315,7 @@ plot_method_grid <- function(method_id,
   if (is.null(file_name)) {
     file_name <- paste0(
       method_id,
-      "_metric_grid_pk_",
+      "_pk_",
       format_file_value(pk_imbalance_fraction_to_plot),
       ".png"
     )
@@ -516,7 +516,7 @@ for (result_set in result_sets) {
               result_set$id,
               "_",
               method_spec$method_id,
-              "_metric_grid_pk_",
+              "_pk_",
               format_file_value(pk_imbalance_fraction_to_plot),
               ".png"
             )
