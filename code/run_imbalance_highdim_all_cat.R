@@ -781,8 +781,8 @@ run_imbalance_benchmark <- function(
     binary_top_fractions = c(0.5, 0.2, 0.1, 0.05),
     pk_imbalance_fractions = c(0.1, 0.2, 0.5, 0.8),
     nu_xy = 0.01,
-    ev_xy_values = c(0.5, 0.05),
-    ev_xx_values = c(0, 0.1, 0.9),
+    ev_xy_values = c(0.5, 0.2, 0.05),
+    ev_xx_values = c(0, 0.1, 0.5, 0.9),
     nfolds = 5,
     nlambda = 50,
     include_stability = TRUE,
@@ -910,8 +910,8 @@ imbalance_run <- run_imbalance_benchmark(
   seeds = 1:10,
   binary_top_fractions = c(0.5, 0.2, 0.1, 0.05),
   pk_imbalance_fractions = c(0.1, 0.2, 0.5, 0.8),
-  ev_xy_values = c(0.5, 0.05),
-  ev_xx_values = c(0, 0.1, 0.9),
+  ev_xy_values = c(0.5, 0.2, 0.05),
+  ev_xx_values = c(0, 0.1, 0.5, 0.9),
   stability_repetitions = 25
 )
 imbalance_results <- imbalance_run$results
