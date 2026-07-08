@@ -38,18 +38,24 @@ sample_fraction <- function(x, fraction) {
 
 make_predictors_binary_with_matched_imbalance <- function(X,
                                                          binary_columns,
-                                                         active_columns,
+                                                         active_columns = NULL,
                                                          binary_top_fraction = 0.2,
                                                          pk_imbalance_fraction = 0.2,
                                                          balanced_top_fraction = 0.5,
                                                          seed = 1) {
   set.seed(seed)
   X <- as.data.frame(X)
-  active_binary <- intersect(active_columns, binary_columns)
-  noise_binary <- setdiff(binary_columns, active_binary)
-  active_imbalanced <- sample_fraction(active_binary, pk_imbalance_fraction)
-  noise_imbalanced <- sample_fraction(noise_binary, pk_imbalance_fraction)
-  imbalanced_columns <- sort(c(active_imbalanced, noise_imbalanced))
+  if (is.null(active_columns)) {
+    active_imbalanced <- integer(0)
+    noise_imbalanced <- integer(0)
+    imbalanced_columns <- sample_fraction(binary_columns, pk_imbalance_fraction)
+  } else {
+    active_binary <- intersect(active_columns, binary_columns)
+    noise_binary <- setdiff(binary_columns, active_binary)
+    active_imbalanced <- sample_fraction(active_binary, pk_imbalance_fraction)
+    noise_imbalanced <- sample_fraction(noise_binary, pk_imbalance_fraction)
+    imbalanced_columns <- sort(c(active_imbalanced, noise_imbalanced))
+  }
   balanced_columns <- setdiff(binary_columns, imbalanced_columns)
 
   for (j in imbalanced_columns) {
@@ -509,8 +515,16 @@ simulate_one_dataset <- function(seed,
     seed = seed + 1000
   )
 
+  modified <- make_predictors_binary_with_matched_imbalance(
+    X = x_data,
+    binary_columns = binary_columns,
+    binary_top_fraction = binary_top_fraction,
+    pk_imbalance_fraction = pk_imbalance_fraction,
+    seed = seed + 1100
+  )
+
   truth_sim <- fake::SimulateRegression(
-    xdata = x_data,
+    xdata = modified$xdata,
     family = "gaussian",
     q = 1,
     nu_xy = nu_xy,
@@ -520,15 +534,6 @@ simulate_one_dataset <- function(seed,
     ev_xy = ev_xy
   )
   active_columns <- which(truth_sim$theta[, 1] != 0)
-
-  modified <- make_predictors_binary_with_matched_imbalance(
-    X = x_data,
-    binary_columns = binary_columns,
-    active_columns = active_columns,
-    binary_top_fraction = binary_top_fraction,
-    pk_imbalance_fraction = pk_imbalance_fraction,
-    seed = seed + 1100
-  )
 
   beta <- as.numeric(truth_sim$beta[, 1])
   y <- generate_outcome_from_beta(
@@ -545,8 +550,8 @@ simulate_one_dataset <- function(seed,
     binary_columns = modified$binary_columns,
     imbalanced_columns = modified$imbalanced_columns,
     balanced_columns = modified$balanced_columns,
-    active_imbalanced_columns = modified$active_imbalanced_columns,
-    noise_imbalanced_columns = modified$noise_imbalanced_columns
+    active_imbalanced_columns = intersect(active_columns, modified$imbalanced_columns),
+    noise_imbalanced_columns = setdiff(modified$imbalanced_columns, active_columns)
   )
 }
 
