@@ -783,7 +783,8 @@ run_imbalance_benchmark <- function(
     include_stability = TRUE,
     stability_ncuts = c(0, 3),
     stability_repetitions = 25,
-    stability_subsample_fraction = 0.5) {
+    stability_subsample_fraction = 0.5,
+    collect_predictor_metadata = FALSE) {
   balanced_grid <- expand.grid(
     dimension_scenario = seq_len(nrow(dimension_scenarios)),
     seed = seeds,
@@ -873,7 +874,8 @@ run_imbalance_benchmark <- function(
       include_stability = include_stability,
       stability_ncuts = stability_ncuts,
       stability_repetitions = stability_repetitions,
-      stability_subsample_fraction = stability_subsample_fraction
+      stability_subsample_fraction = stability_subsample_fraction,
+      collect_predictor_metadata = collect_predictor_metadata
     )
 
     results[[i]] <- scenario_result$results
