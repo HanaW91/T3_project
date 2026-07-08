@@ -713,7 +713,8 @@ run_one_imbalance_scenario <- function(seed,
                                        include_stability = TRUE,
                                        stability_ncuts = c(0, 3),
                                        stability_repetitions = 25,
-                                       stability_subsample_fraction = 0.5) {
+                                       stability_subsample_fraction = 0.5,
+                                       collect_predictor_metadata = FALSE) {
   dat <- simulate_one_dataset(
     seed = seed,
     n = n,
@@ -839,6 +840,11 @@ run_imbalance_benchmark <- function(
   )
 
   results <- vector("list", nrow(grid))
+  predictor_metadata <- if (collect_predictor_metadata) {
+    vector("list", nrow(grid))
+  } else {
+    NULL
+  }
 
   for (i in seq_len(nrow(grid))) {
     message(
@@ -851,7 +857,7 @@ run_imbalance_benchmark <- function(
       " scaling methods)"
     )
 
-    results[[i]] <- run_one_imbalance_scenario(
+    scenario_result <- run_one_imbalance_scenario(
       seed = grid$seed[i],
       scaling_methods = scaling_methods,
       n = grid$n[i],
@@ -869,14 +875,27 @@ run_imbalance_benchmark <- function(
       stability_repetitions = stability_repetitions,
       stability_subsample_fraction = stability_subsample_fraction
     )
+
+    results[[i]] <- scenario_result$results
+
+    if (collect_predictor_metadata) {
+      predictor_metadata[[i]] <- scenario_result$predictor_metadata
+    }
+
+    rm(scenario_result)
+
+    if (i %% 25 == 0) {
+      gc()
+    }
   }
 
   list(
-    results = do.call(rbind, lapply(results, `[[`, "results")),
-    predictor_metadata = do.call(
-      rbind,
-      lapply(results, `[[`, "predictor_metadata")
-    )
+    results = do.call(rbind, results),
+    predictor_metadata = if (collect_predictor_metadata) {
+      do.call(rbind, predictor_metadata)
+    } else {
+      NULL
+    }
   )
 }
 
@@ -892,7 +911,9 @@ imbalance_results <- imbalance_run$results
 imbalance_predictor_metadata <- imbalance_run$predictor_metadata
 
 print(head(imbalance_results))
-print(head(imbalance_predictor_metadata))
+if (!is.null(imbalance_predictor_metadata)) {
+  print(head(imbalance_predictor_metadata))
+}
 
 imbalance_summary <- aggregate(
   cbind(
@@ -950,8 +971,10 @@ utils::write.csv(
   row.names = FALSE
 )
 
-utils::write.csv(
-  imbalance_predictor_metadata,
-  file = file.path("results", "imbalance_highdim_all_cat_metadata.csv"),
-  row.names = FALSE
-)
+if (!is.null(imbalance_predictor_metadata)) {
+  utils::write.csv(
+    imbalance_predictor_metadata,
+    file = file.path("results", "imbalance_highdim_all_cat_metadata.csv"),
+    row.names = FALSE
+  )
+}
