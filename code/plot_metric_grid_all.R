@@ -385,7 +385,7 @@ plot_method_grid <- function(method_id,
       x = 0.5,
       y = 0.5,
       labels = block_label,
-      cex = 1.05,
+      cex = 1.45,
       font = 2
     )
 
