@@ -53,7 +53,8 @@ if (!dir.exists(plot_dir)) {
   dir.create(plot_dir, recursive = TRUE)
 }
 
-pk_imbalance_fraction_to_plot <- 0.2
+pk_imbalance_fractions_to_plot <- c(0.1, 0.2, 0.5, 0.8)
+pk_imbalance_fraction_to_plot <- NULL
 current_result_label <- NULL
 binary_fraction_to_plot <- NULL
 ev_xy_blocks <- c(`Low noise (evxy = 0.5)` = 0.5, `High noise (evxy = 0.05)` = 0.05)
@@ -497,29 +498,33 @@ for (result_set in result_sets) {
   current_result_label <- result_set$label
   binary_fraction_to_plot <- result_set$binary_fraction
 
-  created_files <- c(
-    created_files,
-    unlist(
-      lapply(seq_along(method_specs), function(i) {
-        method_spec <- method_specs[[i]]
+  for (pk_value in pk_imbalance_fractions_to_plot) {
+    pk_imbalance_fraction_to_plot <- pk_value
 
-        plot_method_grid(
-          method_id = method_spec$method_id,
-          method_label = method_spec$method_label,
-          algorithms = method_spec$algorithms,
-          file_name = paste0(
-            result_set$id,
-            "_",
-            method_spec$method_id,
-            "_metric_grid_pk_",
-            format_file_value(pk_imbalance_fraction_to_plot),
-            ".png"
+    created_files <- c(
+      created_files,
+      unlist(
+        lapply(seq_along(method_specs), function(i) {
+          method_spec <- method_specs[[i]]
+
+          plot_method_grid(
+            method_id = method_spec$method_id,
+            method_label = method_spec$method_label,
+            algorithms = method_spec$algorithms,
+            file_name = paste0(
+              result_set$id,
+              "_",
+              method_spec$method_id,
+              "_metric_grid_pk_",
+              format_file_value(pk_imbalance_fraction_to_plot),
+              ".png"
+            )
           )
-        )
-      }),
-      use.names = FALSE
+        }),
+        use.names = FALSE
+      )
     )
-  )
+  }
 }
 
 message("Created plot files:")
