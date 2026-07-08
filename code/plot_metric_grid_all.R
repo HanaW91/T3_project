@@ -325,9 +325,9 @@ plot_method_grid <- function(method_id,
   grDevices::png(
     filename = output_file,
     width = 4000,
-    height = 4700,
+    height = 5400,
     res = 220,
-    pointsize = 16
+    pointsize = 14
   )
 
   old_par <- graphics::par(no.readonly = TRUE)
@@ -358,10 +358,10 @@ plot_method_grid <- function(method_id,
 
   layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
   layout_matrix <- do.call(rbind, layout_rows)
-  row_heights <- c(rep(c(0.24, rep(1, n_corr)), n_blocks), 0.35)
+  row_heights <- c(rep(c(0.32, rep(1, n_corr)), n_blocks), 0.40)
 
   graphics::layout(layout_matrix, heights = row_heights)
-  graphics::par(oma = c(0, 0, 6.2, 0))
+  graphics::par(oma = c(0, 0, 5.4, 0))
 
   row_index <- 0
 
@@ -394,7 +394,7 @@ plot_method_grid <- function(method_id,
       for (metric_index in seq_len(n_metric)) {
         row_label <- names(ev_xx_rows_to_plot)[corr_index]
 
-        graphics::par(mar = c(4.3, 7.0, 2.7, 1.2))
+        graphics::par(mar = c(3.7, 5.6, 2.2, 0.9))
 
         plot_metric_panel(
           plot_data = plot_data,
