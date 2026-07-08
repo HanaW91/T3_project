@@ -58,7 +58,7 @@ pk_imbalance_fraction_to_plot <- NULL
 current_result_label <- NULL
 binary_fraction_to_plot <- NULL
 ev_xy_blocks <- c(`Low noise (evxy = 0.5)` = 0.5, `High noise (evxy = 0.05)` = 0.05)
-ev_xx_rows <- c(`no corr` = 0, `low corr` = 0.1, `high corr` = 0.9)
+ev_xx_rows <- c(`No corr (evxx = 0)` = 0, `Low corr (evxx = 0.1)` = 0.1, `High corr (evxx = 0.9)` = 0.9)
 
 method_specs <- list(
   list(
