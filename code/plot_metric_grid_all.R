@@ -363,7 +363,7 @@ plot_method_grid <- function(method_id,
   row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.58)
 
   graphics::layout(layout_matrix, heights = row_heights)
-  graphics::par(oma = c(0, 0, 5.4, 0))
+  graphics::par(oma = c(0, 0, 7.2, 0))
 
   row_index <- 0
 
@@ -417,7 +417,7 @@ plot_method_grid <- function(method_id,
     paste0(method_label, " selection performance across rarity, correlation, and noise"),
     outer = TRUE,
     side = 3,
-    line = 4.2,
+    line = 5.4,
     cex = 1.35,
     font = 2
   )
@@ -436,7 +436,7 @@ plot_method_grid <- function(method_id,
     ),
     outer = TRUE,
     side = 3,
-    line = 2.5,
+    line = 3.5,
     cex = 0.88
   )
 
