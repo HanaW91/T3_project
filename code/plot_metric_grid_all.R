@@ -56,7 +56,7 @@ if (!dir.exists(plot_dir)) {
 pk_imbalance_fraction_to_plot <- 0.2
 current_result_label <- NULL
 binary_fraction_to_plot <- NULL
-ev_xy_blocks <- c(`low noise\nevxy = 0.5` = 0.5, `high noise\nevxy = 0.05` = 0.05)
+ev_xy_blocks <- c(`Low noise (evxy = 0.5)` = 0.5, `High noise (evxy = 0.05)` = 0.05)
 ev_xx_rows <- c(`no corr` = 0, `low corr` = 0.1, `high corr` = 0.9)
 
 method_specs <- list(
@@ -325,7 +325,7 @@ plot_method_grid <- function(method_id,
   grDevices::png(
     filename = output_file,
     width = 4000,
-    height = 4200,
+    height = 4700,
     res = 220,
     pointsize = 16
   )
@@ -337,13 +337,31 @@ plot_method_grid <- function(method_id,
   })
 
   n_metric <- nrow(metric_specs)
-  n_rows <- length(ev_xy_blocks_to_plot) * length(ev_xx_rows_to_plot)
-  panel_count <- n_rows * n_metric
-  layout_matrix <- matrix(seq_len(panel_count), nrow = n_rows, ncol = n_metric, byrow = TRUE)
-  layout_matrix <- rbind(layout_matrix, rep(panel_count + 1, n_metric))
+  n_blocks <- length(ev_xy_blocks_to_plot)
+  n_corr <- length(ev_xx_rows_to_plot)
+  n_panel_rows <- n_blocks * n_corr
+  n_data_panels <- n_panel_rows * n_metric
+  header_ids <- n_data_panels + seq_len(n_blocks)
+  legend_id <- n_data_panels + n_blocks + 1
 
-  graphics::layout(layout_matrix, heights = c(rep(1, n_rows), 0.35))
-  graphics::par(mar = c(4.3, 7.0, 3.2, 1.2), oma = c(0, 0, 6.2, 0))
+  layout_rows <- list()
+  panel_id <- 1
+
+  for (block_index in seq_len(n_blocks)) {
+    layout_rows[[length(layout_rows) + 1]] <- rep(header_ids[block_index], n_metric)
+
+    for (corr_index in seq_len(n_corr)) {
+      layout_rows[[length(layout_rows) + 1]] <- panel_id:(panel_id + n_metric - 1)
+      panel_id <- panel_id + n_metric
+    }
+  }
+
+  layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
+  layout_matrix <- do.call(rbind, layout_rows)
+  row_heights <- c(rep(c(0.24, rep(1, n_corr)), n_blocks), 0.35)
+
+  graphics::layout(layout_matrix, heights = row_heights)
+  graphics::par(oma = c(0, 0, 6.2, 0))
 
   row_index <- 0
 
@@ -351,15 +369,32 @@ plot_method_grid <- function(method_id,
     ev_xy_value <- as.numeric(ev_xy_blocks_to_plot[block_index])
     block_label <- names(ev_xy_blocks_to_plot)[block_index]
 
+    graphics::par(mar = c(0, 0, 0, 0))
+    graphics::plot.new()
+    graphics::rect(
+      xleft = 0.01,
+      ybottom = 0.08,
+      xright = 0.99,
+      ytop = 0.92,
+      border = "grey70",
+      lwd = 1.2
+    )
+    graphics::text(
+      x = 0.5,
+      y = 0.5,
+      labels = block_label,
+      cex = 1.05,
+      font = 2
+    )
+
     for (corr_index in seq_along(ev_xx_rows_to_plot)) {
       ev_xx_value <- as.numeric(ev_xx_rows_to_plot[corr_index])
       row_index <- row_index + 1
 
       for (metric_index in seq_len(n_metric)) {
-        row_label <- paste0(
-          if (metric_index == 1) paste0(block_label, "\n") else "",
-          names(ev_xx_rows_to_plot)[corr_index]
-        )
+        row_label <- names(ev_xx_rows_to_plot)[corr_index]
+
+        graphics::par(mar = c(4.3, 7.0, 2.7, 1.2))
 
         plot_metric_panel(
           plot_data = plot_data,
@@ -369,7 +404,7 @@ plot_method_grid <- function(method_id,
           metric = metric_specs$metric[metric_index],
           metric_label = if (row_index == 1) metric_specs$label[metric_index] else "",
           row_label = row_label,
-          show_x_label = row_index == n_rows,
+          show_x_label = row_index == n_panel_rows,
           show_y_label = metric_index == 1
         )
       }
