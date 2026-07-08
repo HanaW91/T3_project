@@ -360,7 +360,7 @@ plot_method_grid <- function(method_id,
   legend_id <- next_figure_id
   layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
   layout_matrix <- do.call(rbind, layout_rows)
-  row_heights <- c(rep(c(0.32, rep(1, n_corr)), n_blocks), 0.40)
+  row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.58)
 
   graphics::layout(layout_matrix, heights = row_heights)
   graphics::par(oma = c(0, 0, 5.4, 0))
@@ -385,7 +385,7 @@ plot_method_grid <- function(method_id,
       x = 0.5,
       y = 0.5,
       labels = block_label,
-      cex = 1.45,
+      cex = 1.95,
       font = 2
     )
 
@@ -459,10 +459,11 @@ plot_method_grid <- function(method_id,
     col = line_colours[paste(legend_grid$algorithm, legend_grid$scaling_method, sep = "__")],
     pch = scaling_symbols[legend_grid$scaling_method],
     lty = 1,
-    lwd = 2.5,
+    lwd = 3.0,
     ncol = 3,
     bty = "n",
-    cex = 0.9
+    cex = 1.18,
+    pt.cex = 1.25
   )
 
   invisible(output_file)
