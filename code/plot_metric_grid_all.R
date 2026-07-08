@@ -340,22 +340,23 @@ plot_method_grid <- function(method_id,
   n_blocks <- length(ev_xy_blocks_to_plot)
   n_corr <- length(ev_xx_rows_to_plot)
   n_panel_rows <- n_blocks * n_corr
-  n_data_panels <- n_panel_rows * n_metric
-  header_ids <- n_data_panels + seq_len(n_blocks)
-  legend_id <- n_data_panels + n_blocks + 1
 
   layout_rows <- list()
-  panel_id <- 1
+  next_figure_id <- 1
 
   for (block_index in seq_len(n_blocks)) {
-    layout_rows[[length(layout_rows) + 1]] <- rep(header_ids[block_index], n_metric)
+    header_id <- next_figure_id
+    next_figure_id <- next_figure_id + 1
+    layout_rows[[length(layout_rows) + 1]] <- rep(header_id, n_metric)
 
     for (corr_index in seq_len(n_corr)) {
-      layout_rows[[length(layout_rows) + 1]] <- panel_id:(panel_id + n_metric - 1)
-      panel_id <- panel_id + n_metric
+      panel_ids <- next_figure_id:(next_figure_id + n_metric - 1)
+      next_figure_id <- next_figure_id + n_metric
+      layout_rows[[length(layout_rows) + 1]] <- panel_ids
     }
   }
 
+  legend_id <- next_figure_id
   layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
   layout_matrix <- do.call(rbind, layout_rows)
   row_heights <- c(rep(c(0.32, rep(1, n_corr)), n_blocks), 0.40)
