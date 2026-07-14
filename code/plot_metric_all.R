@@ -53,7 +53,7 @@ if (!dir.exists(plot_dir)) {
   dir.create(plot_dir, recursive = TRUE)
 }
 
-pk_imbalance_fractions_to_plot <- c(0.1, 0.2, 0.5, 0.8)
+pk_imbalance_fractions_to_plot <- c(0.2)
 pk_imbalance_fraction_to_plot <- NULL
 current_result_label <- NULL
 binary_fraction_to_plot <- NULL
@@ -105,6 +105,11 @@ line_colours <- c(
 
 format_file_value <- function(value) {
   gsub("\\.", "_", format(value, trim = TRUE, scientific = FALSE))
+}
+
+format_noise_id <- function(noise_label) {
+  noise_id <- sub(" noise.*", "", tolower(noise_label))
+  gsub("[^a-z0-9]+", "_", noise_id)
 }
 
 mean_ci <- function(values) {
@@ -277,6 +282,7 @@ plot_metric_panel <- function(plot_data,
 plot_method_grid <- function(method_id,
                              method_label,
                              algorithms,
+                             ev_xy_block,
                              file_name = NULL) {
   plot_data <- make_rarity_plot_data(
     data = summary_results,
@@ -299,7 +305,7 @@ plot_method_grid <- function(method_id,
     )
   }
 
-  ev_xy_blocks_to_plot <- ev_xy_blocks[as.numeric(ev_xy_blocks) %in% available_ev_xy]
+  ev_xy_blocks_to_plot <- ev_xy_block[as.numeric(ev_xy_block) %in% available_ev_xy]
 
   available_ev_xx <- sort(unique(plot_data$ev_xx))
   ev_xx_rows_to_plot <- ev_xx_rows[as.numeric(ev_xx_rows) %in% available_ev_xx]
@@ -317,6 +323,8 @@ plot_method_grid <- function(method_id,
       method_id,
       "_pk_",
       format_file_value(pk_imbalance_fraction_to_plot),
+      "_",
+      format_noise_id(names(ev_xy_block)),
       ".png"
     )
   }
@@ -326,7 +334,7 @@ plot_method_grid <- function(method_id,
   grDevices::png(
     filename = output_file,
     width = 4000,
-    height = 5400,
+    height = 2600,
     res = 220,
     pointsize = 14
   )
@@ -414,7 +422,7 @@ plot_method_grid <- function(method_id,
   }
 
   graphics::mtext(
-    paste0(method_label, " selection performance across rarity, correlation, and noise"),
+    paste0(method_label, " selection performance across rarity and correlation"),
     outer = TRUE,
     side = 3,
     line = 5.4,
@@ -502,29 +510,36 @@ for (result_set in result_sets) {
   for (pk_value in pk_imbalance_fractions_to_plot) {
     pk_imbalance_fraction_to_plot <- pk_value
 
-    created_files <- c(
-      created_files,
-      unlist(
-        lapply(seq_along(method_specs), function(i) {
-          method_spec <- method_specs[[i]]
+    for (ev_xy_index in seq_along(ev_xy_blocks)) {
+      ev_xy_block <- ev_xy_blocks[ev_xy_index]
 
-          plot_method_grid(
-            method_id = method_spec$method_id,
-            method_label = method_spec$method_label,
-            algorithms = method_spec$algorithms,
-            file_name = paste0(
-              result_set$id,
-              "_",
-              method_spec$method_id,
-              "_pk_",
-              format_file_value(pk_imbalance_fraction_to_plot),
-              ".png"
+      created_files <- c(
+        created_files,
+        unlist(
+          lapply(seq_along(method_specs), function(i) {
+            method_spec <- method_specs[[i]]
+
+            plot_method_grid(
+              method_id = method_spec$method_id,
+              method_label = method_spec$method_label,
+              algorithms = method_spec$algorithms,
+              ev_xy_block = ev_xy_block,
+              file_name = paste0(
+                result_set$id,
+                "_",
+                method_spec$method_id,
+                "_",
+                format_noise_id(names(ev_xy_block)),
+                "_noise_pk_",
+                format_file_value(pk_imbalance_fraction_to_plot),
+                ".png"
+              )
             )
-          )
-        }),
-        use.names = FALSE
+          }),
+          use.names = FALSE
+        )
       )
-    )
+    }
   }
 }
 

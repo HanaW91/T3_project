@@ -127,6 +127,11 @@ format_file_value <- function(value) {
   gsub("\\.", "_", format(value, trim = TRUE, scientific = FALSE))
 }
 
+format_noise_id <- function(noise_label) {
+  noise_id <- sub(" noise.*", "", tolower(noise_label))
+  gsub("[^a-z0-9]+", "_", noise_id)
+}
+
 mean_ci <- function(values) {
   values <- values[!is.na(values)]
   n_values <- length(values)
@@ -331,7 +336,8 @@ plot_subgroup_grid <- function(summary_results,
                                result_set,
                                method_spec,
                                subgroup_spec,
-                               pk_imbalance_fraction) {
+                               pk_imbalance_fraction,
+                               ev_xy_block) {
   plot_data <- make_rarity_plot_data(
     data = summary_results,
     algorithms = method_spec$algorithms,
@@ -353,7 +359,7 @@ plot_subgroup_grid <- function(summary_results,
   }
 
   available_ev_xy <- sort(unique(plot_data$ev_xy))
-  ev_xy_blocks_to_plot <- ev_xy_blocks[as.numeric(ev_xy_blocks) %in% available_ev_xy]
+  ev_xy_blocks_to_plot <- ev_xy_block[as.numeric(ev_xy_block) %in% available_ev_xy]
   available_ev_xx <- sort(unique(plot_data$ev_xx))
   ev_xx_rows_to_plot <- ev_xx_rows[as.numeric(ev_xx_rows) %in% available_ev_xx]
 
@@ -367,6 +373,9 @@ plot_subgroup_grid <- function(summary_results,
     method_spec$method_id,
     "_",
     subgroup_spec$id,
+    "_",
+    format_noise_id(names(ev_xy_block)),
+    "_noise",
     "_pk_",
     format_file_value(pk_imbalance_fraction),
     ".png"
@@ -377,7 +386,7 @@ plot_subgroup_grid <- function(summary_results,
   grDevices::png(
     filename = output_file,
     width = 4000,
-    height = 5400,
+    height = 2600,
     res = 220,
     pointsize = 14
   )
@@ -558,16 +567,19 @@ for (result_set in result_sets) {
 
     for (method_spec in method_specs) {
       for (pk_value in pk_imbalance_fractions_to_plot) {
-        created_file <- plot_subgroup_grid(
-          summary_results = summary_results,
-          result_set = result_set,
-          method_spec = method_spec,
-          subgroup_spec = subgroup_spec,
-          pk_imbalance_fraction = pk_value
-        )
+        for (ev_xy_index in seq_along(ev_xy_blocks)) {
+          created_file <- plot_subgroup_grid(
+            summary_results = summary_results,
+            result_set = result_set,
+            method_spec = method_spec,
+            subgroup_spec = subgroup_spec,
+            pk_imbalance_fraction = pk_value,
+            ev_xy_block = ev_xy_blocks[ev_xy_index]
+          )
 
-        if (!is.null(created_file)) {
-          created_files <- c(created_files, created_file)
+          if (!is.null(created_file)) {
+            created_files <- c(created_files, created_file)
+          }
         }
       }
     }
