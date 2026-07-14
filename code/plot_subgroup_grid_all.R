@@ -4,8 +4,9 @@
 #   rare vs non-rare binary predictors
 #   binary vs continuous predictors
 #
-# One plot is created for each dataset, method, algorithm, scaling method,
-# subgroup comparison, and pk imbalance level.
+# One plot is created for each dataset, method family (LASSO or stability
+# LASSO), subgroup comparison, and pk imbalance level. Algorithm settings
+# and scaling methods are shown together within each plot.
 
 result_sets <- list(
   list(
@@ -104,6 +105,12 @@ algorithm_labels <- c(
   stability_lasso_ncut_0 = "ncut=0",
   stability_lasso_ncut_3 = "ncut=3"
 )
+algorithm_line_types <- c(
+  cv_lasso_min = 1,
+  cv_lasso_1se = 2,
+  stability_lasso_ncut_0 = 1,
+  stability_lasso_ncut_3 = 2
+)
 
 required_base_columns <- c(
   "seed",
@@ -200,12 +207,12 @@ summarise_subgroup_metric <- function(data, subgroup_spec, metric) {
 }
 
 make_rarity_plot_data <- function(data,
-                                  algorithm,
+                                  algorithms,
                                   scaling_method,
                                   binary_fraction,
                                   pk_imbalance_fraction) {
   rare_rows <- data[
-    data$algorithm == algorithm &
+    data$algorithm %in% algorithms &
       data$scaling_method %in% scaling_method &
       data$binary_fraction == binary_fraction &
       data$pk_imbalance_fraction == pk_imbalance_fraction &
@@ -213,7 +220,7 @@ make_rarity_plot_data <- function(data,
   ]
 
   baseline_rows <- data[
-    data$algorithm == algorithm &
+    data$algorithm %in% algorithms &
       data$scaling_method %in% scaling_method &
       data$binary_fraction == binary_fraction &
       data$binary_top_fraction == 0.5 &
@@ -245,7 +252,8 @@ plot_subgroup_panel <- function(plot_data,
                                 row_label,
                                 show_x_label,
                                 show_y_label,
-                                subgroup_spec) {
+                                subgroup_spec,
+                                algorithms) {
   panel_data <- plot_data[
     plot_data$ev_xy == ev_xy &
       plot_data$ev_xx == ev_xx &
@@ -277,41 +285,44 @@ plot_subgroup_panel <- function(plot_data,
     group_id <- subgroup_spec$groups$group[group_index]
     group_colour <- subgroup_spec$groups$colour[group_index]
 
-    for (scaling_method in scaling_levels) {
-      line_data <- panel_data[
-        panel_data$subgroup == group_id &
-          panel_data$scaling_method == scaling_method,
-      ]
+    for (algorithm in algorithms) {
+      for (scaling_method in scaling_levels) {
+        line_data <- panel_data[
+          panel_data$subgroup == group_id &
+            panel_data$algorithm == algorithm &
+            panel_data$scaling_method == scaling_method,
+        ]
 
-      if (nrow(line_data) == 0 || all(is.na(line_data$mean))) {
-        next
+        if (nrow(line_data) == 0 || all(is.na(line_data$mean))) {
+          next
+        }
+
+        line_data <- line_data[order(line_data$rarity_x), ]
+        line_type <- algorithm_line_types[algorithm]
+
+        graphics::polygon(
+          x = c(line_data$rarity_x, rev(line_data$rarity_x)),
+          y = c(line_data$ci_low, rev(line_data$ci_high)),
+          col = grDevices::adjustcolor(group_colour, alpha.f = 0.04),
+          border = NA
+        )
+
+        graphics::lines(
+          line_data$rarity_x,
+          line_data$mean,
+          col = group_colour,
+          lty = line_type,
+          lwd = 2.1
+        )
+
+        graphics::points(
+          line_data$rarity_x,
+          line_data$mean,
+          col = group_colour,
+          pch = scaling_symbols[scaling_method],
+          cex = 0.80
+        )
       }
-
-      line_data <- line_data[order(line_data$rarity_x), ]
-      line_type <- match(scaling_method, scaling_levels)
-
-      graphics::polygon(
-        x = c(line_data$rarity_x, rev(line_data$rarity_x)),
-        y = c(line_data$ci_low, rev(line_data$ci_high)),
-        col = grDevices::adjustcolor(group_colour, alpha.f = 0.06),
-        border = NA
-      )
-
-      graphics::lines(
-        line_data$rarity_x,
-        line_data$mean,
-        col = group_colour,
-        lty = line_type,
-        lwd = 2.2
-      )
-
-      graphics::points(
-        line_data$rarity_x,
-        line_data$mean,
-        col = group_colour,
-        pch = scaling_symbols[scaling_method],
-        cex = 0.85
-      )
     }
   }
 }
@@ -320,11 +331,10 @@ plot_subgroup_grid <- function(summary_results,
                                result_set,
                                method_spec,
                                subgroup_spec,
-                               algorithm,
                                pk_imbalance_fraction) {
   plot_data <- make_rarity_plot_data(
     data = summary_results,
-    algorithm = algorithm,
+    algorithms = method_spec$algorithms,
     scaling_method = scaling_levels,
     binary_fraction = result_set$binary_fraction,
     pk_imbalance_fraction = pk_imbalance_fraction
@@ -336,8 +346,6 @@ plot_subgroup_grid <- function(summary_results,
       result_set$id,
       ", ",
       subgroup_spec$id,
-      ", ",
-      algorithm,
       ", pk=",
       pk_imbalance_fraction
     )
@@ -357,8 +365,6 @@ plot_subgroup_grid <- function(summary_results,
     result_set$id,
     "_",
     method_spec$method_id,
-    "_",
-    algorithm_labels[algorithm],
     "_",
     subgroup_spec$id,
     "_pk_",
@@ -437,7 +443,8 @@ plot_subgroup_grid <- function(summary_results,
           row_label = names(ev_xx_rows_to_plot)[corr_index],
           show_x_label = row_index == n_panel_rows,
           show_y_label = metric_index == 1,
-          subgroup_spec = subgroup_spec
+          subgroup_spec = subgroup_spec,
+          algorithms = method_spec$algorithms
         )
       }
     }
@@ -454,8 +461,8 @@ plot_subgroup_grid <- function(summary_results,
 
   graphics::mtext(
     paste0(
-      "Algorithm: ",
-      algorithm_labels[algorithm],
+      "Algorithms: ",
+      paste(algorithm_labels[method_spec$algorithms], collapse = " and "),
       "; scaling methods shown together",
       "; dataset = ",
       result_set$label,
@@ -473,11 +480,14 @@ plot_subgroup_grid <- function(summary_results,
   graphics::plot.new()
   legend_grid <- expand.grid(
     subgroup_index = seq_len(nrow(subgroup_spec$groups)),
+    algorithm = method_spec$algorithms,
     scaling_method = scaling_levels,
     stringsAsFactors = FALSE
   )
   legend_labels <- paste(
     subgroup_spec$groups$label[legend_grid$subgroup_index],
+    "+",
+    algorithm_labels[legend_grid$algorithm],
     "+",
     scaling_labels[legend_grid$scaling_method]
   )
@@ -486,11 +496,11 @@ plot_subgroup_grid <- function(summary_results,
     legend = legend_labels,
     col = subgroup_spec$groups$colour[legend_grid$subgroup_index],
     pch = scaling_symbols[legend_grid$scaling_method],
-    lty = match(legend_grid$scaling_method, scaling_levels),
+    lty = algorithm_line_types[legend_grid$algorithm],
     lwd = 3.0,
     ncol = 3,
     bty = "n",
-    cex = 1.02,
+    cex = 0.86,
     pt.cex = 1.25
   )
 
@@ -547,20 +557,17 @@ for (result_set in result_sets) {
     }
 
     for (method_spec in method_specs) {
-      for (algorithm in method_spec$algorithms) {
-        for (pk_value in pk_imbalance_fractions_to_plot) {
-          created_file <- plot_subgroup_grid(
-            summary_results = summary_results,
-            result_set = result_set,
-            method_spec = method_spec,
-            subgroup_spec = subgroup_spec,
-            algorithm = algorithm,
-            pk_imbalance_fraction = pk_value
-          )
+      for (pk_value in pk_imbalance_fractions_to_plot) {
+        created_file <- plot_subgroup_grid(
+          summary_results = summary_results,
+          result_set = result_set,
+          method_spec = method_spec,
+          subgroup_spec = subgroup_spec,
+          pk_imbalance_fraction = pk_value
+        )
 
-          if (!is.null(created_file)) {
-            created_files <- c(created_files, created_file)
-          }
+        if (!is.null(created_file)) {
+          created_files <- c(created_files, created_file)
         }
       }
     }
