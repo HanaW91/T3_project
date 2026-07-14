@@ -206,7 +206,7 @@ make_rarity_plot_data <- function(data,
                                   pk_imbalance_fraction) {
   rare_rows <- data[
     data$algorithm == algorithm &
-      data$scaling_method == scaling_method &
+      data$scaling_method %in% scaling_method &
       data$binary_fraction == binary_fraction &
       data$pk_imbalance_fraction == pk_imbalance_fraction &
       data$binary_top_fraction != 0.5,
@@ -214,7 +214,7 @@ make_rarity_plot_data <- function(data,
 
   baseline_rows <- data[
     data$algorithm == algorithm &
-      data$scaling_method == scaling_method &
+      data$scaling_method %in% scaling_method &
       data$binary_fraction == binary_fraction &
       data$binary_top_fraction == 0.5 &
       data$pk_imbalance_fraction == 0,
@@ -276,36 +276,43 @@ plot_subgroup_panel <- function(plot_data,
   for (group_index in seq_len(nrow(subgroup_spec$groups))) {
     group_id <- subgroup_spec$groups$group[group_index]
     group_colour <- subgroup_spec$groups$colour[group_index]
-    line_data <- panel_data[panel_data$subgroup == group_id, ]
 
-    if (nrow(line_data) == 0 || all(is.na(line_data$mean))) {
-      next
+    for (scaling_method in scaling_levels) {
+      line_data <- panel_data[
+        panel_data$subgroup == group_id &
+          panel_data$scaling_method == scaling_method,
+      ]
+
+      if (nrow(line_data) == 0 || all(is.na(line_data$mean))) {
+        next
+      }
+
+      line_data <- line_data[order(line_data$rarity_x), ]
+      line_type <- match(scaling_method, scaling_levels)
+
+      graphics::polygon(
+        x = c(line_data$rarity_x, rev(line_data$rarity_x)),
+        y = c(line_data$ci_low, rev(line_data$ci_high)),
+        col = grDevices::adjustcolor(group_colour, alpha.f = 0.06),
+        border = NA
+      )
+
+      graphics::lines(
+        line_data$rarity_x,
+        line_data$mean,
+        col = group_colour,
+        lty = line_type,
+        lwd = 2.2
+      )
+
+      graphics::points(
+        line_data$rarity_x,
+        line_data$mean,
+        col = group_colour,
+        pch = scaling_symbols[scaling_method],
+        cex = 0.85
+      )
     }
-
-    line_data <- line_data[order(line_data$rarity_x), ]
-
-    graphics::polygon(
-      x = c(line_data$rarity_x, rev(line_data$rarity_x)),
-      y = c(line_data$ci_low, rev(line_data$ci_high)),
-      col = grDevices::adjustcolor(group_colour, alpha.f = 0.12),
-      border = NA
-    )
-
-    graphics::lines(
-      line_data$rarity_x,
-      line_data$mean,
-      col = group_colour,
-      lty = 1,
-      lwd = 2.5
-    )
-
-    graphics::points(
-      line_data$rarity_x,
-      line_data$mean,
-      col = group_colour,
-      pch = 16,
-      cex = 0.85
-    )
   }
 }
 
@@ -314,12 +321,11 @@ plot_subgroup_grid <- function(summary_results,
                                method_spec,
                                subgroup_spec,
                                algorithm,
-                               scaling_method,
                                pk_imbalance_fraction) {
   plot_data <- make_rarity_plot_data(
     data = summary_results,
     algorithm = algorithm,
-    scaling_method = scaling_method,
+    scaling_method = scaling_levels,
     binary_fraction = result_set$binary_fraction,
     pk_imbalance_fraction = pk_imbalance_fraction
   )
@@ -332,8 +338,6 @@ plot_subgroup_grid <- function(summary_results,
       subgroup_spec$id,
       ", ",
       algorithm,
-      ", ",
-      scaling_method,
       ", pk=",
       pk_imbalance_fraction
     )
@@ -355,8 +359,6 @@ plot_subgroup_grid <- function(summary_results,
     method_spec$method_id,
     "_",
     algorithm_labels[algorithm],
-    "_",
-    scaling_method,
     "_",
     subgroup_spec$id,
     "_pk_",
@@ -454,8 +456,7 @@ plot_subgroup_grid <- function(summary_results,
     paste0(
       "Algorithm: ",
       algorithm_labels[algorithm],
-      "; scaling = ",
-      scaling_labels[scaling_method],
+      "; scaling methods shown together",
       "; dataset = ",
       result_set$label,
       "; pk imbalance = ",
@@ -470,16 +471,26 @@ plot_subgroup_grid <- function(summary_results,
 
   graphics::par(mar = c(0, 0, 0, 0))
   graphics::plot.new()
+  legend_grid <- expand.grid(
+    subgroup_index = seq_len(nrow(subgroup_spec$groups)),
+    scaling_method = scaling_levels,
+    stringsAsFactors = FALSE
+  )
+  legend_labels <- paste(
+    subgroup_spec$groups$label[legend_grid$subgroup_index],
+    "+",
+    scaling_labels[legend_grid$scaling_method]
+  )
   graphics::legend(
     "center",
-    legend = subgroup_spec$groups$label,
-    col = subgroup_spec$groups$colour,
-    pch = 16,
-    lty = 1,
+    legend = legend_labels,
+    col = subgroup_spec$groups$colour[legend_grid$subgroup_index],
+    pch = scaling_symbols[legend_grid$scaling_method],
+    lty = match(legend_grid$scaling_method, scaling_levels),
     lwd = 3.0,
-    ncol = nrow(subgroup_spec$groups),
+    ncol = 3,
     bty = "n",
-    cex = 1.18,
+    cex = 1.02,
     pt.cex = 1.25
   )
 
@@ -537,21 +548,18 @@ for (result_set in result_sets) {
 
     for (method_spec in method_specs) {
       for (algorithm in method_spec$algorithms) {
-        for (scaling_method in scaling_levels) {
-          for (pk_value in pk_imbalance_fractions_to_plot) {
-            created_file <- plot_subgroup_grid(
-              summary_results = summary_results,
-              result_set = result_set,
-              method_spec = method_spec,
-              subgroup_spec = subgroup_spec,
-              algorithm = algorithm,
-              scaling_method = scaling_method,
-              pk_imbalance_fraction = pk_value
-            )
+        for (pk_value in pk_imbalance_fractions_to_plot) {
+          created_file <- plot_subgroup_grid(
+            summary_results = summary_results,
+            result_set = result_set,
+            method_spec = method_spec,
+            subgroup_spec = subgroup_spec,
+            algorithm = algorithm,
+            pk_imbalance_fraction = pk_value
+          )
 
-            if (!is.null(created_file)) {
-              created_files <- c(created_files, created_file)
-            }
+          if (!is.null(created_file)) {
+            created_files <- c(created_files, created_file)
           }
         }
       }
