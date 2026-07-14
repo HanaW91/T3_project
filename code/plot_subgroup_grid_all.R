@@ -40,7 +40,7 @@ if (!dir.exists(plot_dir)) {
   dir.create(plot_dir, recursive = TRUE)
 }
 
-pk_imbalance_fractions_to_plot <- c(0.1, 0.2, 0.5, 0.8)
+pk_imbalance_fractions_to_plot <- c(0.2)
 ev_xy_blocks <- c(
   `Low noise (evxy = 0.5)` = 0.5,
   `Medium noise (evxy = 0.2)` = 0.2,
