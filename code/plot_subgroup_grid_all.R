@@ -548,6 +548,10 @@ for (result_set in result_sets) {
   }
 
   for (subgroup_spec in subgroup_specs) {
+    if (subgroup_spec$id == "binary_vs_continuous" && result_set$binary_fraction == 1) {
+      next
+    }
+
     subgroup_columns <- unlist(lapply(
       subgroup_spec$groups$group,
       function(group) subgroup_metric_column(group, metric_specs$metric)
