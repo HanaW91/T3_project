@@ -81,6 +81,7 @@ subgroup_specs <- list(
       group = c("rare_binary", "nonrare_binary"),
       label = c("Rare binary", "Non-rare binary"),
       colour = c("#D55E00", "#0072B2"),
+      colour_alt = c("#E69F00", "#56B4E9"),
       stringsAsFactors = FALSE
     )
   ),
@@ -91,6 +92,7 @@ subgroup_specs <- list(
       group = c("binary", "continuous"),
       label = c("Binary", "Continuous"),
       colour = c("#009E73", "#CC79A7"),
+      colour_alt = c("#66C2A5", "#F781BF"),
       stringsAsFactors = FALSE
     )
   )
@@ -138,6 +140,16 @@ scaling_levels_for_binary_fraction <- function(binary_fraction) {
   }
 
   scaling_levels
+}
+
+subgroup_algorithm_colour <- function(subgroup_spec, group_index, algorithm, algorithms) {
+  algorithm_index <- match(algorithm, algorithms)
+
+  if (!is.na(algorithm_index) && algorithm_index == 2) {
+    return(subgroup_spec$groups$colour_alt[group_index])
+  }
+
+  subgroup_spec$groups$colour[group_index]
 }
 
 mean_ci <- function(values) {
@@ -297,9 +309,15 @@ plot_subgroup_panel <- function(plot_data,
 
   for (group_index in seq_len(nrow(subgroup_spec$groups))) {
     group_id <- subgroup_spec$groups$group[group_index]
-    group_colour <- subgroup_spec$groups$colour[group_index]
 
     for (algorithm in algorithms) {
+      line_colour <- subgroup_algorithm_colour(
+        subgroup_spec = subgroup_spec,
+        group_index = group_index,
+        algorithm = algorithm,
+        algorithms = algorithms
+      )
+
       for (scaling_method in scaling_methods_to_plot) {
         line_data <- panel_data[
           panel_data$subgroup == group_id &
@@ -317,14 +335,14 @@ plot_subgroup_panel <- function(plot_data,
         graphics::polygon(
           x = c(line_data$rarity_x, rev(line_data$rarity_x)),
           y = c(line_data$ci_low, rev(line_data$ci_high)),
-          col = grDevices::adjustcolor(group_colour, alpha.f = 0.04),
+          col = grDevices::adjustcolor(line_colour, alpha.f = 0.04),
           border = NA
         )
 
         graphics::lines(
           line_data$rarity_x,
           line_data$mean,
-          col = group_colour,
+          col = line_colour,
           lty = line_type,
           lwd = 2.1
         )
@@ -332,7 +350,7 @@ plot_subgroup_panel <- function(plot_data,
         graphics::points(
           line_data$rarity_x,
           line_data$mean,
-          col = group_colour,
+          col = line_colour,
           pch = scaling_symbols[scaling_method],
           cex = 0.80
         )
@@ -511,10 +529,22 @@ plot_subgroup_grid <- function(summary_results,
     "+",
     scaling_labels[legend_grid$scaling_method]
   )
+  legend_colours <- mapply(
+    function(group_index, algorithm) {
+      subgroup_algorithm_colour(
+        subgroup_spec = subgroup_spec,
+        group_index = group_index,
+        algorithm = algorithm,
+        algorithms = method_spec$algorithms
+      )
+    },
+    group_index = legend_grid$subgroup_index,
+    algorithm = legend_grid$algorithm
+  )
   graphics::legend(
     "center",
     legend = legend_labels,
-    col = subgroup_spec$groups$colour[legend_grid$subgroup_index],
+    col = legend_colours,
     pch = scaling_symbols[legend_grid$scaling_method],
     lty = algorithm_line_types[legend_grid$algorithm],
     lwd = 3.0,
