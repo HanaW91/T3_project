@@ -787,7 +787,7 @@ run_one_imbalance_scenario <- function(seed,
 run_imbalance_benchmark <- function(
     seeds = 5,
     scaling_methods = c("none", "zscore", "2sd"),
-    dimension_scenarios = data.frame(n = 100, pk = 1000),
+    dimension_scenarios = data.frame(n = 500, pk = 1000),
     binary_fraction_values = c(0.5),
     binary_top_fractions = c(0.5, 0.2, 0.1, 0.05),
     pk_imbalance_fractions = c(0.2),
