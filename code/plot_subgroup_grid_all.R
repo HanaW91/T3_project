@@ -385,8 +385,8 @@ plot_subgroup_grid <- function(summary_results,
 
   grDevices::png(
     filename = output_file,
-    width = 4000,
-    height = 2600,
+    width = 3000,
+    height = 3600,
     res = 220,
     pointsize = 14
   )
