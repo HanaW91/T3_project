@@ -132,6 +132,14 @@ format_noise_id <- function(noise_label) {
   gsub("[^a-z0-9]+", "_", noise_id)
 }
 
+scaling_levels_for_binary_fraction <- function(binary_fraction) {
+  if (binary_fraction == 1) {
+    return(c("none", "zscore"))
+  }
+
+  scaling_levels
+}
+
 mean_ci <- function(values) {
   values <- values[!is.na(values)]
   n_values <- length(values)
@@ -258,7 +266,8 @@ plot_subgroup_panel <- function(plot_data,
                                 show_x_label,
                                 show_y_label,
                                 subgroup_spec,
-                                algorithms) {
+                                algorithms,
+                                scaling_methods_to_plot) {
   panel_data <- plot_data[
     plot_data$ev_xy == ev_xy &
       plot_data$ev_xx == ev_xx &
@@ -291,7 +300,7 @@ plot_subgroup_panel <- function(plot_data,
     group_colour <- subgroup_spec$groups$colour[group_index]
 
     for (algorithm in algorithms) {
-      for (scaling_method in scaling_levels) {
+      for (scaling_method in scaling_methods_to_plot) {
         line_data <- panel_data[
           panel_data$subgroup == group_id &
             panel_data$algorithm == algorithm &
@@ -338,10 +347,11 @@ plot_subgroup_grid <- function(summary_results,
                                subgroup_spec,
                                pk_imbalance_fraction,
                                ev_xy_block) {
+  scaling_methods_to_plot <- scaling_levels_for_binary_fraction(result_set$binary_fraction)
   plot_data <- make_rarity_plot_data(
     data = summary_results,
     algorithms = method_spec$algorithms,
-    scaling_method = scaling_levels,
+    scaling_method = scaling_methods_to_plot,
     binary_fraction = result_set$binary_fraction,
     pk_imbalance_fraction = pk_imbalance_fraction
   )
@@ -453,7 +463,8 @@ plot_subgroup_grid <- function(summary_results,
           show_x_label = row_index == n_panel_rows,
           show_y_label = metric_index == 1,
           subgroup_spec = subgroup_spec,
-          algorithms = method_spec$algorithms
+          algorithms = method_spec$algorithms,
+          scaling_methods_to_plot = scaling_methods_to_plot
         )
       }
     }
@@ -490,7 +501,7 @@ plot_subgroup_grid <- function(summary_results,
   legend_grid <- expand.grid(
     subgroup_index = seq_len(nrow(subgroup_spec$groups)),
     algorithm = method_spec$algorithms,
-    scaling_method = scaling_levels,
+    scaling_method = scaling_methods_to_plot,
     stringsAsFactors = FALSE
   )
   legend_labels <- paste(

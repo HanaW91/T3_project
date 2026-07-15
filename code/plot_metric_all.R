@@ -112,6 +112,14 @@ format_noise_id <- function(noise_label) {
   gsub("[^a-z0-9]+", "_", noise_id)
 }
 
+scaling_levels_for_binary_fraction <- function(binary_fraction) {
+  if (binary_fraction == 1) {
+    return(c("none", "zscore"))
+  }
+
+  scaling_levels
+}
+
 mean_ci <- function(values) {
   values <- values[!is.na(values)]
   n_values <- length(values)
@@ -210,7 +218,8 @@ plot_metric_panel <- function(plot_data,
                               metric_label,
                               row_label,
                               show_x_label,
-                              show_y_label) {
+                              show_y_label,
+                              scaling_methods_to_plot) {
   panel_data <- plot_data[
     plot_data$ev_xy == ev_xy &
       plot_data$ev_xx == ev_xx &
@@ -239,7 +248,7 @@ plot_metric_panel <- function(plot_data,
   graphics::grid(col = "grey88")
 
   for (algorithm in algorithms) {
-    for (scaling_method in scaling_levels) {
+    for (scaling_method in scaling_methods_to_plot) {
       line_data <- panel_data[
         panel_data$algorithm == algorithm &
           panel_data$scaling_method == scaling_method,
@@ -290,6 +299,8 @@ plot_method_grid <- function(method_id,
     binary_fraction = binary_fraction_to_plot,
     pk_imbalance_fraction = pk_imbalance_fraction_to_plot
   )
+  scaling_methods_to_plot <- scaling_levels_for_binary_fraction(binary_fraction_to_plot)
+  plot_data <- plot_data[plot_data$scaling_method %in% scaling_methods_to_plot, ]
 
   if (nrow(plot_data) == 0) {
     warning("No plot data found for algorithm(s) = ", paste(algorithms, collapse = ", "))
@@ -415,7 +426,8 @@ plot_method_grid <- function(method_id,
           metric_label = if (row_index == 1) metric_specs$label[metric_index] else "",
           row_label = row_label,
           show_x_label = row_index == n_panel_rows,
-          show_y_label = metric_index == 1
+          show_y_label = metric_index == 1,
+          scaling_methods_to_plot = scaling_methods_to_plot
         )
       }
     }
@@ -452,7 +464,7 @@ plot_method_grid <- function(method_id,
   graphics::plot.new()
   legend_grid <- expand.grid(
     algorithm = algorithms,
-    scaling_method = scaling_levels,
+    scaling_method = scaling_methods_to_plot,
     stringsAsFactors = FALSE
   )
   legend_labels <- paste(
