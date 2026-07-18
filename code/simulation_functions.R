@@ -38,11 +38,22 @@ sample_n_or_all <- function(x, n) {
   sort(sample(x, size = min(n, length(x))))
 }
 
-default_n_cores <- function() {
-  hpc_cores <- suppressWarnings(as.integer(Sys.getenv("PBS_NCPUS", "")))
+default_n_cores <- function(max_cores = 40L) {
+  # Prefer the scheduler allocation; do not use the whole HPC node by accident.
+  scheduler_vars <- c("PBS_NCPUS", "NCPUS", "OMP_NUM_THREADS", "SLURM_CPUS_PER_TASK")
+  scheduler_cores <- suppressWarnings(as.integer(Sys.getenv(scheduler_vars, "")))
+  scheduler_cores <- scheduler_cores[!is.na(scheduler_cores) & scheduler_cores > 0]
 
-  if (!is.na(hpc_cores) && hpc_cores > 0) {
-    return(hpc_cores)
+  if (length(scheduler_cores) > 0) {
+    return(min(scheduler_cores[1], max_cores))
+  }
+
+  nodefile <- Sys.getenv("PBS_NODEFILE", "")
+  if (nzchar(nodefile) && file.exists(nodefile)) {
+    nodefile_cores <- length(readLines(nodefile, warn = FALSE))
+    if (nodefile_cores > 0) {
+      return(min(nodefile_cores, max_cores))
+    }
   }
 
   local_cores <- parallel::detectCores(logical = FALSE)
@@ -50,7 +61,7 @@ default_n_cores <- function() {
     return(1L)
   }
 
-  max(1L, local_cores)
+  min(max_cores, max(1L, local_cores))
 }
 
 select_binary_columns <- function(p, binary_fraction = 1.0, seed = 1) {
