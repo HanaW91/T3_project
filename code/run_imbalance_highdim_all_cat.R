@@ -12,6 +12,7 @@ imbalance_run <- run_imbalance_benchmark(
   ev_xy_values = c(0.5, 0.2, 0.05),
   ev_xx_values = c(0, 0.1, 0.5, 0.9),
   stability_repetitions = 100,
+  n_cores = default_n_cores(),
   collect_predictor_metadata = FALSE
 )
 

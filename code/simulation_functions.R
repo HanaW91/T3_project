@@ -38,6 +38,21 @@ sample_n_or_all <- function(x, n) {
   sort(sample(x, size = min(n, length(x))))
 }
 
+default_n_cores <- function() {
+  hpc_cores <- suppressWarnings(as.integer(Sys.getenv("PBS_NCPUS", "")))
+
+  if (!is.na(hpc_cores) && hpc_cores > 0) {
+    return(hpc_cores)
+  }
+
+  local_cores <- parallel::detectCores(logical = FALSE)
+  if (is.na(local_cores)) {
+    return(1L)
+  }
+
+  max(1L, local_cores)
+}
+
 select_binary_columns <- function(p, binary_fraction = 1.0, seed = 1) {
   set.seed(seed)
   n_binary <- round(p * binary_fraction)
@@ -389,6 +404,7 @@ fit_sharp_lasso <- function(x,
                             repetitions = 100,
                             subsample_fraction = 0.5,
                             nlambda = 50,
+                            n_cores = 1,
                             seed = 1) {
   if (is.null(colnames(x))) {
     colnames(x) <- paste0("V", seq_len(ncol(x)))
@@ -403,7 +419,7 @@ fit_sharp_lasso <- function(x,
     tau = subsample_fraction,
     Lambda_cardinal = nlambda,
     seed = seed,
-    n_cores = 1,
+    n_cores = n_cores,
     verbose = FALSE
   )
   selected_raw <- sharp::SelectedVariables(stability)
@@ -525,6 +541,7 @@ evaluate_one_scaling <- function(dat,
                                  include_stability = TRUE,
                                  stability_repetitions = 100,
                                  stability_subsample_fraction = 0.5,
+                                 n_cores = 1,
                                  collect_predictor_metadata = TRUE) {
   # Fit all methods to one scaled version of the same simulated dataset.
   x_scaled <- scale_matrix(dat$x, method = scaling_method, binary_columns = dat$binary_columns)
@@ -538,6 +555,7 @@ evaluate_one_scaling <- function(dat,
         repetitions = stability_repetitions,
         subsample_fraction = stability_subsample_fraction,
         nlambda = nlambda,
+        n_cores = n_cores,
         seed = seed + 4000
       )
     } else {
@@ -640,6 +658,7 @@ run_one_imbalance_scenario <- function(seed,
                                        include_stability = TRUE,
                                        stability_repetitions = 100,
                                        stability_subsample_fraction = 0.5,
+                                       n_cores = 1,
                                        collect_predictor_metadata = TRUE) {
   # Generate the dataset once, then evaluate every scaling method on it.
   dat <- simulate_one_dataset(
@@ -671,6 +690,7 @@ run_one_imbalance_scenario <- function(seed,
       include_stability = include_stability,
       stability_repetitions = stability_repetitions,
       stability_subsample_fraction = stability_subsample_fraction,
+      n_cores = n_cores,
       collect_predictor_metadata = collect_predictor_metadata
     )
   }
@@ -700,6 +720,7 @@ run_imbalance_benchmark <- function(
     include_stability = TRUE,
     stability_repetitions = 100,
     stability_subsample_fraction = 0.5,
+    n_cores = default_n_cores(),
     collect_predictor_metadata = TRUE) {
   # Balanced baseline plus the rare-category scenarios
   balanced_grid <- expand.grid(
@@ -764,6 +785,7 @@ run_imbalance_benchmark <- function(
       include_stability = include_stability,
       stability_repetitions = stability_repetitions,
       stability_subsample_fraction = stability_subsample_fraction,
+      n_cores = n_cores,
       collect_predictor_metadata = collect_predictor_metadata
     )
     results[[i]] <- scenario_result$results
