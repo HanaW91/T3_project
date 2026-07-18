@@ -1,12 +1,12 @@
-# Plots for the imbalance-focused benchmark with stability-selection LASSO.
+# Plots for the imbalance-focused benchmark.
 
-results_file <- file.path("results", "imbalance_stability_results.csv")
+results_file <- file.path("results", "imbalance_results.csv")
 
 if (!file.exists(results_file)) {
   stop(
     "Cannot find ",
     results_file,
-    ". Run source(\"code/run_imbalance_benchmark_with_stability.R\") first."
+    ". Run source(\"code/run_imbalance_benchmark.R\") first."
   )
 }
 
@@ -32,7 +32,7 @@ if (length(missing_columns) > 0) {
   )
 }
 
-plot_dir <- file.path("plots", "imbalance_with_stability")
+plot_dir <- file.path("plots", "imbalance")
 
 if (!dir.exists(plot_dir)) {
   dir.create(plot_dir, recursive = TRUE)
@@ -43,31 +43,14 @@ metric_labels <- c("F1 Score", "Recall", "Precision")
 scaling_levels <- c("none", "zscore", "2sd")
 scaling_colours <- c(none = "grey45", zscore = "#2563eb", `2sd` = "#dc2626")
 scaling_symbols <- c(none = 16, zscore = 17, `2sd` = 15)
-algorithm_levels <- c(
-  "cv_lasso_min",
-  "cv_lasso_1se",
-  "stability_lasso_ncut_0",
-  "stability_lasso_ncut_3"
-)
+algorithm_levels <- c("cv_lasso_min", "cv_lasso_1se")
 combo_colours <- c(
   cv_lasso_min_none = "#0072B2",
   cv_lasso_min_zscore = "#E69F00",
   cv_lasso_min_2sd = "#009E73",
   cv_lasso_1se_none = "#D55E00",
   cv_lasso_1se_zscore = "#CC79A7",
-  cv_lasso_1se_2sd = "#000000",
-  stability_lasso_ncut_0_none = "#56B4E9",
-  stability_lasso_ncut_0_zscore = "#F0E442",
-  stability_lasso_ncut_0_2sd = "#117733",
-  stability_lasso_ncut_3_none = "#CC6677",
-  stability_lasso_ncut_3_zscore = "#AA4499",
-  stability_lasso_ncut_3_2sd = "#332288"
-)
-algorithm_labels <- c(
-  cv_lasso_min = "CV LASSO lambda.min",
-  cv_lasso_1se = "CV LASSO lambda.1se",
-  stability_lasso_ncut_0 = "Stability LASSO ncut=0",
-  stability_lasso_ncut_3 = "Stability LASSO ncut=3"
+  cv_lasso_1se_2sd = "#000000"
 )
 
 if (!"algorithm" %in% names(raw_results)) {
@@ -806,7 +789,11 @@ plot_cv_imbalance_scenario_lines <- function(binary_fraction = 0.5,
   )
 
   legend_labels <- paste(
-    algorithm_labels[legend_grid$algorithm],
+    ifelse(
+      legend_grid$algorithm == "cv_lasso_min",
+      "CV LASSO lambda.min",
+      "CV LASSO lambda.1se"
+    ),
     "+",
     legend_grid$scaling_method
   )
@@ -985,7 +972,11 @@ plot_cv_imbalance_by_pk <- function(binary_fraction = 0.5,
   )
 
   legend_labels <- paste(
-    algorithm_labels[legend_grid$algorithm],
+    ifelse(
+      legend_grid$algorithm == "cv_lasso_min",
+      "CV LASSO lambda.min",
+      "CV LASSO lambda.1se"
+    ),
     "+",
     legend_grid$scaling_method
   )
@@ -1133,7 +1124,7 @@ plot_scaling_analysis_by_correlation <- function(
     binary_fraction = 0.5,
     binary_top_fraction = 0.05,
     pk_imbalance_fraction = 0.2,
-    file_name = "imbalance_scaling_analysis_with_stability_by_correlation.png",
+    file_name = "imbalance_scaling_analysis_by_correlation.png",
     ev_xx_subset = NULL) {
   plot_data <- scenario_plot_results[
     scenario_plot_results$binary_fraction == binary_fraction &
@@ -1205,7 +1196,11 @@ plot_scaling_analysis_by_correlation <- function(
   )
 
   legend_labels <- paste(
-    algorithm_labels[legend_grid$algorithm],
+    ifelse(
+      legend_grid$algorithm == "cv_lasso_min",
+      "CV LASSO lambda.min",
+      "CV LASSO lambda.1se"
+    ),
     "+",
     legend_grid$scaling_method
   )
@@ -1378,7 +1373,7 @@ plot_scaling_analysis_by_correlation_slices <- function(
         pk_imbalance_fraction = pk_imbalance_fraction,
         ev_xx_subset = ev_xx_value,
         file_name = paste0(
-          "imbalance_scaling_analysis_with_stability_evxx_",
+          "imbalance_scaling_analysis_evxx_",
           format_file_value(ev_xx_value),
           ".png"
         )
@@ -1386,266 +1381,6 @@ plot_scaling_analysis_by_correlation_slices <- function(
     }),
     use.names = FALSE
   )
-}
-
-plot_algorithm_scaling_five_panel <- function(
-    binary_fraction = 0.5,
-    binary_top_fraction = 0.05,
-    pk_imbalance_fraction = 0.2,
-    ev_xx_to_plot = 0.6,
-    metric_to_plot = "f1_score",
-    file_name = "algorithm_scaling_five_panel.png") {
-  plot_data <- scenario_plot_results[
-    scenario_plot_results$binary_fraction == binary_fraction &
-      scenario_plot_results$binary_top_fraction == binary_top_fraction &
-      scenario_plot_results$pk_imbalance_fraction == pk_imbalance_fraction &
-      scenario_plot_results$ev_xx == ev_xx_to_plot &
-      scenario_plot_results$metric == metric_to_plot,
-  ]
-
-  if (nrow(plot_data) == 0) {
-    warning(
-      "No results found for binary_fraction = ",
-      binary_fraction,
-      ", binary_top_fraction = ",
-      binary_top_fraction,
-      ", pk_imbalance_fraction = ",
-      pk_imbalance_fraction,
-      ", ev_xx = ",
-      ev_xx_to_plot,
-      ", metric = ",
-      metric_to_plot
-    )
-    return(invisible(NULL))
-  }
-
-  metric_label <- metric_labels[match(metric_to_plot, metric_columns)]
-  if (is.na(metric_label)) {
-    metric_label <- metric_to_plot
-  }
-
-  best_scaling_rows <- aggregate(
-    mean ~ algorithm + scaling_method,
-    data = plot_data,
-    FUN = function(x) mean(x, na.rm = TRUE)
-  )
-  best_scaling_rows$algorithm <- factor(
-    best_scaling_rows$algorithm,
-    levels = algorithm_levels
-  )
-  best_scaling_rows <- best_scaling_rows[
-    order(best_scaling_rows$algorithm, -best_scaling_rows$mean),
-  ]
-  best_scaling_rows <- best_scaling_rows[
-    !duplicated(best_scaling_rows$algorithm),
-  ]
-
-  output_file <- file.path(plot_dir, file_name)
-
-  grDevices::png(
-    filename = output_file,
-    width = 2400,
-    height = 3200,
-    res = 180,
-    pointsize = 18
-  )
-
-  old_par <- graphics::par(no.readonly = TRUE)
-  on.exit({
-    graphics::par(old_par)
-    grDevices::dev.off()
-  })
-
-  graphics::layout(
-    matrix(c(1, 2, 3, 4, 5, 5, 6, 6), nrow = 4, byrow = TRUE),
-    widths = c(1, 1),
-    heights = c(1.00, 1.00, 1.25, 0.24)
-  )
-  graphics::par(mar = c(5.0, 5.4, 3.0, 1.6), oma = c(0, 0, 5.4, 0))
-
-  x_values <- sort(unique(plot_data$ev_xy))
-
-  for (algorithm in algorithm_levels) {
-    algorithm_data <- plot_data[plot_data$algorithm == algorithm, ]
-
-    graphics::plot(
-      x_values,
-      rep(NA_real_, length(x_values)),
-      type = "n",
-      ylim = c(0, 1),
-      xlab = "Explained variance / signal strength (ev_xy)",
-      ylab = metric_label,
-      main = algorithm_labels[algorithm],
-      xaxt = "n",
-      cex.lab = 1.10,
-      cex.main = 1.15,
-      cex.axis = 1.00
-    )
-    graphics::axis(1, at = x_values, labels = x_values, cex.axis = 0.95)
-    graphics::grid(col = "grey88")
-
-    for (scaling_method in scaling_levels) {
-      line_data <- algorithm_data[
-        algorithm_data$scaling_method == scaling_method,
-      ]
-
-      if (nrow(line_data) == 0) {
-        next
-      }
-
-      line_data <- line_data[order(line_data$ev_xy), ]
-
-      graphics::polygon(
-        x = c(line_data$ev_xy, rev(line_data$ev_xy)),
-        y = c(line_data$ci_low, rev(line_data$ci_high)),
-        col = grDevices::adjustcolor(scaling_colours[scaling_method], alpha.f = 0.12),
-        border = NA
-      )
-      graphics::lines(
-        line_data$ev_xy,
-        line_data$mean,
-        col = scaling_colours[scaling_method],
-        lwd = 3
-      )
-      graphics::points(
-        line_data$ev_xy,
-        line_data$mean,
-        col = scaling_colours[scaling_method],
-        pch = scaling_symbols[scaling_method],
-        cex = 1.1
-      )
-    }
-  }
-
-  graphics::plot(
-    x_values,
-    rep(NA_real_, length(x_values)),
-    type = "n",
-    ylim = c(0, 1),
-    xlab = "Explained variance / signal strength (ev_xy)",
-    ylab = metric_label,
-    main = "Best scaling per algorithm",
-    xaxt = "n",
-    cex.lab = 1.10,
-    cex.main = 1.15,
-    cex.axis = 1.00
-  )
-  graphics::axis(1, at = x_values, labels = x_values, cex.axis = 0.95)
-  graphics::grid(col = "grey88")
-
-  best_legend_labels <- character(0)
-  best_legend_colours <- character(0)
-  best_legend_symbols <- integer(0)
-
-  for (algorithm in algorithm_levels) {
-    best_row <- best_scaling_rows[best_scaling_rows$algorithm == algorithm, ]
-
-    if (nrow(best_row) == 0) {
-      next
-    }
-
-    best_scaling <- as.character(best_row$scaling_method[1])
-    line_data <- plot_data[
-      plot_data$algorithm == algorithm &
-        plot_data$scaling_method == best_scaling,
-    ]
-    line_data <- line_data[order(line_data$ev_xy), ]
-    combo_key <- paste(algorithm, best_scaling, sep = "_")
-
-    graphics::polygon(
-      x = c(line_data$ev_xy, rev(line_data$ev_xy)),
-      y = c(line_data$ci_low, rev(line_data$ci_high)),
-      col = grDevices::adjustcolor(combo_colours[combo_key], alpha.f = 0.10),
-      border = NA
-    )
-    graphics::lines(
-      line_data$ev_xy,
-      line_data$mean,
-      col = combo_colours[combo_key],
-      lwd = 3
-    )
-    graphics::points(
-      line_data$ev_xy,
-      line_data$mean,
-      col = combo_colours[combo_key],
-      pch = scaling_symbols[best_scaling],
-      cex = 1.1
-    )
-
-    best_legend_labels <- c(
-      best_legend_labels,
-      paste0(algorithm_labels[algorithm], " + ", best_scaling)
-    )
-    best_legend_colours <- c(best_legend_colours, combo_colours[combo_key])
-    best_legend_symbols <- c(best_legend_symbols, scaling_symbols[best_scaling])
-  }
-
-  graphics::mtext(
-    paste0("Scaling Choice by Algorithm - ", metric_label),
-    outer = TRUE,
-    side = 3,
-    line = 3.4,
-    cex = 1.25,
-    font = 2
-  )
-
-  graphics::mtext(
-    paste0(
-      "Setup: ",
-      format_binary_fraction(binary_fraction),
-      "; binary_top_fraction = ",
-      binary_top_fraction,
-      "; pk_imbalance_fraction = ",
-      pk_imbalance_fraction,
-      "; ev_xx = ",
-      ev_xx_to_plot
-    ),
-    outer = TRUE,
-    side = 3,
-    line = 1.8,
-    cex = 0.92
-  )
-
-  graphics::par(mar = c(0, 0, 0, 0))
-  graphics::plot.new()
-  graphics::plot.window(xlim = c(0, 1), ylim = c(0, 1))
-  graphics::text(
-    0.5,
-    0.94,
-    "First four panels: scaling within algorithm; fifth panel: best scaling",
-    cex = 0.92,
-    font = 2
-  )
-  graphics::legend(
-    x = 0.5,
-    y = 0.66,
-    legend = paste("Scaling:", scaling_levels),
-    col = scaling_colours[scaling_levels],
-    lty = 1,
-    pch = scaling_symbols[scaling_levels],
-    lwd = 3,
-    cex = 0.86,
-    ncol = 3,
-    bty = "n",
-    xjust = 0.5,
-    yjust = 0.5
-  )
-  graphics::legend(
-    x = 0.5,
-    y = 0.38,
-    legend = best_legend_labels,
-    col = best_legend_colours,
-    lty = 1,
-    pch = best_legend_symbols,
-    lwd = 3,
-    cex = 0.78,
-    ncol = 4,
-    bty = "n",
-    xjust = 0.5,
-    yjust = 0.5
-  )
-
-  invisible(output_file)
 }
 
 binary_fraction_to_plot <- 0.5
@@ -1669,7 +1404,7 @@ created_slice_files <- unlist(
       ev_xy_to_plot = ev_xy_to_plot,
       ev_xx_to_plot = ev_xx_to_plot,
       file_name = paste0(
-        "imbalance_lasso_with_stability_by_pk_evxy_",
+        "imbalance_cv_lasso_by_pk_evxy_",
         format_file_value(ev_xy_to_plot),
         "_evxx_",
         format_file_value(ev_xx_to_plot),
@@ -1680,67 +1415,18 @@ created_slice_files <- unlist(
   use.names = FALSE
 )
 
-available_algorithm_scenarios <- unique(
-  scenario_plot_results[
-    scenario_plot_results$binary_fraction == binary_fraction_to_plot &
-      scenario_plot_results$binary_top_fraction != 0.5,
-    c("binary_top_fraction", "pk_imbalance_fraction", "ev_xx")
-  ]
-)
-available_algorithm_scenarios <- available_algorithm_scenarios[
-  order(
-    available_algorithm_scenarios$ev_xx,
-    available_algorithm_scenarios$binary_top_fraction,
-    available_algorithm_scenarios$pk_imbalance_fraction
-  ),
-]
-
-created_five_panel_files <- unlist(
-  lapply(seq_len(nrow(available_algorithm_scenarios)), function(i) {
-    binary_top_fraction_to_plot <- available_algorithm_scenarios$binary_top_fraction[i]
-    pk_imbalance_fraction_to_plot <- available_algorithm_scenarios$pk_imbalance_fraction[i]
-    ev_xx_to_plot <- available_algorithm_scenarios$ev_xx[i]
-
-    unlist(
-      lapply(metric_columns, function(metric_to_plot) {
-        plot_algorithm_scaling_five_panel(
-          binary_fraction = binary_fraction_to_plot,
-          binary_top_fraction = binary_top_fraction_to_plot,
-          pk_imbalance_fraction = pk_imbalance_fraction_to_plot,
-          ev_xx_to_plot = ev_xx_to_plot,
-          metric_to_plot = metric_to_plot,
-          file_name = paste0(
-            "algorithm_scaling_five_panel_",
-            metric_to_plot,
-            "_bintop_",
-            format_file_value(binary_top_fraction_to_plot),
-            "_pk_",
-            format_file_value(pk_imbalance_fraction_to_plot),
-            "_evxx_",
-            format_file_value(ev_xx_to_plot),
-            ".png"
-          )
-        )
-      }),
-      use.names = FALSE
-    )
-  }),
-  use.names = FALSE
-)
-
 created_files <- c(
   plot_scaling_analysis_by_correlation(
     binary_fraction = binary_fraction_to_plot,
     binary_top_fraction = 0.05,
     pk_imbalance_fraction = 0.2,
-    file_name = "imbalance_scaling_analysis_with_stability_by_correlation.png"
+    file_name = "imbalance_scaling_analysis_by_correlation.png"
   ),
   plot_scaling_analysis_by_correlation_slices(
     binary_fraction = binary_fraction_to_plot,
     binary_top_fraction = 0.05,
     pk_imbalance_fraction = 0.2
   ),
-  created_five_panel_files,
   created_slice_files
 )
 

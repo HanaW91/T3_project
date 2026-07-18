@@ -22,11 +22,17 @@ required_columns <- c(
   "pk_imbalance_fraction",
   "ev_xy",
   "ev_xx",
+  "binary_precision",
   "binary_recall",
+  "binary_f1_score",
+  "continuous_precision",
   "continuous_recall",
+  "continuous_f1_score",
+  "rare_binary_precision",
   "rare_binary_recall",
-  "nonrare_binary_recall",
   "rare_binary_f1_score",
+  "nonrare_binary_precision",
+  "nonrare_binary_recall",
   "nonrare_binary_f1_score"
 )
 
@@ -1365,6 +1371,48 @@ summarise_binary_group_metric_with_label <- function(data,
   metric_summary
 }
 
+best_scaling_per_algorithm <- function(summary_data,
+                                       choice_metric = "F1 Score") {
+  choice_data <- summary_data[summary_data$metric_label == choice_metric, ]
+
+  if (nrow(choice_data) == 0) {
+    choice_data <- summary_data
+  }
+
+  split_keys <- interaction(
+    choice_data$algorithm,
+    choice_data$scaling_method,
+    drop = TRUE
+  )
+
+  score_rows <- lapply(split(choice_data, split_keys), function(piece) {
+    data.frame(
+      algorithm = as.character(piece$algorithm[1]),
+      scaling_method = as.character(piece$scaling_method[1]),
+      score = mean(piece$mean, na.rm = TRUE),
+      stringsAsFactors = FALSE
+    )
+  })
+  score_data <- do.call(rbind, score_rows)
+
+  best_rows <- lapply(algorithm_levels, function(algorithm) {
+    algorithm_scores <- score_data[score_data$algorithm == algorithm, ]
+
+    if (nrow(algorithm_scores) == 0) {
+      return(NULL)
+    }
+
+    algorithm_scores <- algorithm_scores[
+      order(-algorithm_scores$score, match(algorithm_scores$scaling_method, scaling_levels)),
+    ]
+    algorithm_scores[1, c("algorithm", "scaling_method")]
+  })
+
+  best_rows <- do.call(rbind, best_rows)
+  row.names(best_rows) <- NULL
+  best_rows
+}
+
 plot_rare_nonrare_recall_f1_four_panel <- function(
     binary_fraction = 0.5,
     binary_top_fraction_to_plot = 0.05,
@@ -1423,6 +1471,7 @@ plot_rare_nonrare_recall_f1_four_panel <- function(
 
   metric_labels_to_plot <- c("F1 Score", "Recall")
   group_labels_to_plot <- c("Rare binary", "Non-rare binary")
+  legend_grid <- best_scaling_per_algorithm(plot_summary)
   output_file <- file.path(plot_dir, file_name)
 
   grDevices::png(
@@ -1445,11 +1494,6 @@ plot_rare_nonrare_recall_f1_four_panel <- function(
   graphics::layout(layout_matrix, heights = c(1, 1, 0.24))
   graphics::par(mar = c(4.8, 5.5, 2.1, 1.5), oma = c(0, 0, 5.3, 0))
 
-  legend_grid <- expand.grid(
-    algorithm = algorithm_levels,
-    scaling_method = scaling_levels,
-    stringsAsFactors = FALSE
-  )
   legend_labels <- paste(
     algorithm_labels[legend_grid$algorithm],
     "+",
@@ -1571,7 +1615,7 @@ plot_rare_nonrare_recall_f1_four_panel <- function(
   )
 
   graphics::mtext(
-    "Rows compare F1 and recall; columns compare rare and non-rare true binary predictors",
+    "Rows compare F1 and recall; columns compare rare and non-rare true binary predictors; each algorithm uses its F1-best scaling",
     outer = TRUE,
     side = 3,
     line = 1.8,
@@ -1593,6 +1637,944 @@ plot_rare_nonrare_recall_f1_four_panel <- function(
     pch = scaling_symbols[legend_grid$scaling_method],
     lwd = 2.7,
     cex = 0.80,
+    ncol = 4,
+    bty = "n"
+  )
+
+  invisible(output_file)
+}
+
+plot_binary_continuous_recall_f1_four_panel <- function(
+    binary_fraction = 0.5,
+    binary_top_fraction_to_plot = 0.05,
+    ev_xy_to_plot = 0.7,
+    ev_xx_to_plot = 0.7,
+    file_name = "binary_continuous_recall_f1_four_panel_with_stability.png") {
+  plot_data <- raw_results[
+    raw_results$binary_fraction == binary_fraction &
+      raw_results$binary_top_fraction == binary_top_fraction_to_plot &
+      raw_results$ev_xy == ev_xy_to_plot &
+      raw_results$ev_xx == ev_xx_to_plot,
+  ]
+
+  if (nrow(plot_data) == 0) {
+    warning(
+      "No results found for binary_fraction = ",
+      binary_fraction,
+      ", binary_top_fraction = ",
+      binary_top_fraction_to_plot,
+      ", ev_xy = ",
+      ev_xy_to_plot,
+      ", ev_xx = ",
+      ev_xx_to_plot
+    )
+    return(invisible(NULL))
+  }
+
+  plot_summary <- rbind(
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "binary_f1_score",
+      "F1 Score",
+      "All binary"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "continuous_f1_score",
+      "F1 Score",
+      "Continuous"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "binary_recall",
+      "Recall",
+      "All binary"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "continuous_recall",
+      "Recall",
+      "Continuous"
+    )
+  )
+  plot_summary$algorithm <- factor(plot_summary$algorithm, levels = algorithm_levels)
+  plot_summary$scaling_method <- factor(plot_summary$scaling_method, levels = scaling_levels)
+
+  metric_labels_to_plot <- c("F1 Score", "Recall")
+  group_labels_to_plot <- c("All binary", "Continuous")
+  legend_grid <- best_scaling_per_algorithm(plot_summary)
+  output_file <- file.path(plot_dir, file_name)
+
+  grDevices::png(
+    filename = output_file,
+    width = 3600,
+    height = 2200,
+    res = 180,
+    pointsize = 18
+  )
+
+  old_par <- graphics::par(no.readonly = TRUE)
+  on.exit({
+    graphics::par(old_par)
+    grDevices::dev.off()
+  })
+
+  layout_matrix <- matrix(seq_len(4), nrow = 2, ncol = 2, byrow = TRUE)
+  layout_matrix <- rbind(layout_matrix, c(5, 5))
+
+  graphics::layout(layout_matrix, heights = c(1, 1, 0.24))
+  graphics::par(mar = c(4.8, 5.5, 2.1, 1.5), oma = c(0, 0, 5.3, 0))
+
+  legend_labels <- paste(
+    algorithm_labels[legend_grid$algorithm],
+    "+",
+    legend_grid$scaling_method
+  )
+
+  for (metric_index in seq_along(metric_labels_to_plot)) {
+    metric_label <- metric_labels_to_plot[metric_index]
+
+    for (group_index in seq_along(group_labels_to_plot)) {
+      group_label <- group_labels_to_plot[group_index]
+      panel_data <- plot_summary[
+        plot_summary$metric_label == metric_label &
+          plot_summary$group_label == group_label,
+      ]
+      x_values <- sort(unique(panel_data$pk_imbalance_fraction))
+
+      graphics::plot(
+        x_values,
+        rep(NA_real_, length(x_values)),
+        type = "n",
+        ylim = c(0, 1),
+        xlab = if (metric_index == length(metric_labels_to_plot)) {
+          "Proportion of binary predictors imbalanced (pk_imbalance_fraction)"
+        } else {
+          ""
+        },
+        ylab = metric_label,
+        main = if (metric_index == 1) group_label else "",
+        xaxt = "n",
+        cex.lab = 1.15,
+        cex.main = 1.25,
+        cex.axis = 1.05
+      )
+      graphics::axis(1, at = x_values, labels = x_values, cex.axis = 1.0)
+      graphics::grid(col = "grey88")
+
+      for (i in seq_len(nrow(legend_grid))) {
+        algorithm <- legend_grid$algorithm[i]
+        scaling_method <- legend_grid$scaling_method[i]
+        combo_key <- paste(algorithm, scaling_method, sep = "_")
+        line_data <- panel_data[
+          panel_data$algorithm == algorithm &
+            panel_data$scaling_method == scaling_method,
+        ]
+
+        if (nrow(line_data) == 0) {
+          next
+        }
+
+        line_data <- line_data[order(line_data$pk_imbalance_fraction), ]
+        line_data <- line_data[!is.na(line_data$mean), ]
+
+        if (nrow(line_data) == 0) {
+          next
+        }
+
+        graphics::polygon(
+          x = c(line_data$pk_imbalance_fraction, rev(line_data$pk_imbalance_fraction)),
+          y = c(line_data$ci_low, rev(line_data$ci_high)),
+          col = grDevices::adjustcolor(combo_colours[combo_key], alpha.f = 0.08),
+          border = NA
+        )
+      }
+
+      for (i in seq_len(nrow(legend_grid))) {
+        algorithm <- legend_grid$algorithm[i]
+        scaling_method <- legend_grid$scaling_method[i]
+        combo_key <- paste(algorithm, scaling_method, sep = "_")
+        line_data <- panel_data[
+          panel_data$algorithm == algorithm &
+            panel_data$scaling_method == scaling_method,
+        ]
+
+        if (nrow(line_data) == 0) {
+          next
+        }
+
+        line_data <- line_data[order(line_data$pk_imbalance_fraction), ]
+        line_data <- line_data[!is.na(line_data$mean), ]
+
+        if (nrow(line_data) == 0) {
+          next
+        }
+
+        graphics::lines(
+          line_data$pk_imbalance_fraction,
+          line_data$mean,
+          col = combo_colours[combo_key],
+          lwd = 2.7
+        )
+        graphics::points(
+          line_data$pk_imbalance_fraction,
+          line_data$mean,
+          col = combo_colours[combo_key],
+          pch = scaling_symbols[scaling_method],
+          cex = 1.05
+        )
+      }
+    }
+  }
+
+  graphics::mtext(
+    paste0(
+      "Binary vs Continuous Variable Selection - ",
+      format_binary_fraction(binary_fraction),
+      "; rare level = ",
+      binary_top_fraction_to_plot,
+      "; ev_xy = ",
+      ev_xy_to_plot,
+      "; ev_xx = ",
+      ev_xx_to_plot
+    ),
+    outer = TRUE,
+    side = 3,
+    line = 3.4,
+    cex = 1.20,
+    font = 2
+  )
+
+  graphics::mtext(
+    "Rows compare F1 and recall; columns compare true binary and true continuous predictors; each algorithm uses its F1-best scaling",
+    outer = TRUE,
+    side = 3,
+    line = 1.8,
+    cex = 0.92
+  )
+
+  graphics::par(mar = c(0, 0, 0, 0))
+  graphics::plot.new()
+  graphics::legend(
+    "center",
+    legend = legend_labels,
+    title = "Model + scaling",
+    col = combo_colours[paste(
+      legend_grid$algorithm,
+      legend_grid$scaling_method,
+      sep = "_"
+    )],
+    lty = 1,
+    pch = scaling_symbols[legend_grid$scaling_method],
+    lwd = 2.7,
+    cex = 0.80,
+    ncol = 4,
+    bty = "n"
+  )
+
+  invisible(output_file)
+}
+
+plot_group_metric_by_rare_levels <- function(
+    comparison = c("rare_vs_nonrare", "binary_vs_continuous"),
+    metric_to_plot = c("F1 Score", "Recall"),
+    binary_fraction = 0.5,
+    ev_xy_to_plot = 0.7,
+    ev_xx_to_plot = 0.7,
+    file_name = "group_metric_by_rare_levels.png") {
+  comparison <- match.arg(comparison)
+  metric_to_plot <- match.arg(metric_to_plot)
+  rare_levels <- c(0.2, 0.1, 0.05)
+
+  plot_data <- raw_results[
+    raw_results$binary_fraction == binary_fraction &
+      raw_results$binary_top_fraction %in% rare_levels &
+      raw_results$ev_xy == ev_xy_to_plot &
+      raw_results$ev_xx == ev_xx_to_plot,
+  ]
+
+  if (nrow(plot_data) == 0) {
+    warning(
+      "No results found for binary_fraction = ",
+      binary_fraction,
+      ", ev_xy = ",
+      ev_xy_to_plot,
+      ", ev_xx = ",
+      ev_xx_to_plot
+    )
+    return(invisible(NULL))
+  }
+
+  if (comparison == "rare_vs_nonrare") {
+    plot_summary <- rbind(
+      summarise_binary_group_metric_with_label(
+        plot_data,
+        "rare_binary_f1_score",
+        "F1 Score",
+        "Rare binary"
+      ),
+      summarise_binary_group_metric_with_label(
+        plot_data,
+        "nonrare_binary_f1_score",
+        "F1 Score",
+        "Non-rare binary"
+      ),
+      summarise_binary_group_metric_with_label(
+        plot_data,
+        "rare_binary_recall",
+        "Recall",
+        "Rare binary"
+      ),
+      summarise_binary_group_metric_with_label(
+        plot_data,
+        "nonrare_binary_recall",
+        "Recall",
+        "Non-rare binary"
+      )
+    )
+    group_labels_to_plot <- c("Rare binary", "Non-rare binary")
+    title_prefix <- "Rare vs Non-rare Binary"
+  } else {
+    plot_summary <- rbind(
+      summarise_binary_group_metric_with_label(
+        plot_data,
+        "binary_f1_score",
+        "F1 Score",
+        "All binary"
+      ),
+      summarise_binary_group_metric_with_label(
+        plot_data,
+        "continuous_f1_score",
+        "F1 Score",
+        "Continuous"
+      ),
+      summarise_binary_group_metric_with_label(
+        plot_data,
+        "binary_recall",
+        "Recall",
+        "All binary"
+      ),
+      summarise_binary_group_metric_with_label(
+        plot_data,
+        "continuous_recall",
+        "Recall",
+        "Continuous"
+      )
+    )
+    group_labels_to_plot <- c("All binary", "Continuous")
+    title_prefix <- "Binary vs Continuous"
+  }
+
+  plot_summary$algorithm <- factor(plot_summary$algorithm, levels = algorithm_levels)
+  plot_summary$scaling_method <- factor(plot_summary$scaling_method, levels = scaling_levels)
+  legend_grid <- best_scaling_per_algorithm(plot_summary)
+  output_file <- file.path(plot_dir, file_name)
+
+  grDevices::png(
+    filename = output_file,
+    width = 3000,
+    height = 3200,
+    res = 180,
+    pointsize = 18
+  )
+
+  old_par <- graphics::par(no.readonly = TRUE)
+  on.exit({
+    graphics::par(old_par)
+    grDevices::dev.off()
+  })
+
+  panel_count <- length(rare_levels) * length(group_labels_to_plot)
+  layout_matrix <- matrix(
+    seq_len(panel_count),
+    nrow = length(rare_levels),
+    ncol = length(group_labels_to_plot),
+    byrow = TRUE
+  )
+  layout_matrix <- rbind(layout_matrix, rep(panel_count + 1, length(group_labels_to_plot)))
+
+  graphics::layout(layout_matrix, heights = c(rep(1.15, length(rare_levels)), 0.24))
+  graphics::par(mar = c(4.8, 5.5, 2.0, 1.5), oma = c(0, 0, 5.6, 0))
+
+  legend_labels <- paste(
+    algorithm_labels[legend_grid$algorithm],
+    "+",
+    legend_grid$scaling_method
+  )
+
+  for (row_index in seq_along(rare_levels)) {
+    rare_level <- rare_levels[row_index]
+
+    for (group_index in seq_along(group_labels_to_plot)) {
+      group_label <- group_labels_to_plot[group_index]
+      panel_data <- plot_summary[
+        plot_summary$binary_top_fraction == rare_level &
+          plot_summary$metric_label == metric_to_plot &
+          plot_summary$group_label == group_label,
+      ]
+      x_values <- sort(unique(panel_data$pk_imbalance_fraction))
+
+      graphics::plot(
+        x_values,
+        rep(NA_real_, length(x_values)),
+        type = "n",
+        ylim = c(0, 1),
+        xlab = if (row_index == length(rare_levels)) {
+          "Proportion of binary predictors made rare/imbalanced"
+        } else {
+          ""
+        },
+        ylab = if (group_index == 1) {
+          paste0("bt = ", rare_level, "\n", metric_to_plot)
+        } else {
+          ""
+        },
+        main = if (row_index == 1) group_label else "",
+        xaxt = "n",
+        cex.lab = 1.08,
+        cex.main = 1.25,
+        cex.axis = 1.0
+      )
+      graphics::axis(1, at = x_values, labels = x_values, cex.axis = 0.95)
+      graphics::grid(col = "grey88")
+
+      for (i in seq_len(nrow(legend_grid))) {
+        algorithm <- legend_grid$algorithm[i]
+        scaling_method <- legend_grid$scaling_method[i]
+        combo_key <- paste(algorithm, scaling_method, sep = "_")
+        line_data <- panel_data[
+          panel_data$algorithm == algorithm &
+            panel_data$scaling_method == scaling_method,
+        ]
+
+        if (nrow(line_data) == 0) {
+          next
+        }
+
+        line_data <- line_data[order(line_data$pk_imbalance_fraction), ]
+        line_data <- line_data[!is.na(line_data$mean), ]
+
+        if (nrow(line_data) == 0) {
+          next
+        }
+
+        graphics::polygon(
+          x = c(line_data$pk_imbalance_fraction, rev(line_data$pk_imbalance_fraction)),
+          y = c(line_data$ci_low, rev(line_data$ci_high)),
+          col = grDevices::adjustcolor(combo_colours[combo_key], alpha.f = 0.08),
+          border = NA
+        )
+        graphics::lines(
+          line_data$pk_imbalance_fraction,
+          line_data$mean,
+          col = combo_colours[combo_key],
+          lwd = 2.8
+        )
+        graphics::points(
+          line_data$pk_imbalance_fraction,
+          line_data$mean,
+          col = combo_colours[combo_key],
+          pch = scaling_symbols[scaling_method],
+          cex = 1.05
+        )
+      }
+    }
+  }
+
+  graphics::mtext(
+    paste0(
+      title_prefix,
+      " ",
+      metric_to_plot,
+      " by Rare Level - ",
+      format_binary_fraction(binary_fraction),
+      "; ev_xy = ",
+      ev_xy_to_plot,
+      "; ev_xx = ",
+      ev_xx_to_plot
+    ),
+    outer = TRUE,
+    side = 3,
+    line = 3.5,
+    cex = 1.25,
+    font = 2
+  )
+
+  graphics::mtext(
+    "Rows compare rare-category levels; each algorithm uses its F1-best scaling",
+    outer = TRUE,
+    side = 3,
+    line = 1.9,
+    cex = 0.92
+  )
+
+  graphics::par(mar = c(0, 0, 0, 0))
+  graphics::plot.new()
+  graphics::legend(
+    "center",
+    legend = legend_labels,
+    title = "Model + scaling",
+    col = combo_colours[paste(
+      legend_grid$algorithm,
+      legend_grid$scaling_method,
+      sep = "_"
+    )],
+    lty = 1,
+    pch = scaling_symbols[legend_grid$scaling_method],
+    lwd = 2.8,
+    cex = 0.80,
+    ncol = 4,
+    bty = "n"
+  )
+
+  invisible(output_file)
+}
+
+plot_binary_continuous_metric_panel <- function(
+    binary_fraction = 0.5,
+    binary_top_fraction_to_plot = 0.05,
+    ev_xy_to_plot = 0.7,
+    ev_xx_to_plot = 0.7,
+    file_name = "binary_continuous_metric_panel.png") {
+  plot_data <- raw_results[
+    raw_results$binary_fraction == binary_fraction &
+      raw_results$binary_top_fraction == binary_top_fraction_to_plot &
+      raw_results$ev_xy == ev_xy_to_plot &
+      raw_results$ev_xx == ev_xx_to_plot,
+  ]
+
+  if (nrow(plot_data) == 0) {
+    warning(
+      "No results found for binary_fraction = ",
+      binary_fraction,
+      ", binary_top_fraction = ",
+      binary_top_fraction_to_plot,
+      ", ev_xy = ",
+      ev_xy_to_plot,
+      ", ev_xx = ",
+      ev_xx_to_plot
+    )
+    return(invisible(NULL))
+  }
+
+  plot_summary <- rbind(
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "continuous_f1_score",
+      "F1 Score",
+      "Continuous"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "continuous_recall",
+      "Recall",
+      "Continuous"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "continuous_precision",
+      "Precision",
+      "Continuous"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "binary_f1_score",
+      "F1 Score",
+      "All binary"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "binary_recall",
+      "Recall",
+      "All binary"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "binary_precision",
+      "Precision",
+      "All binary"
+    )
+  )
+  plot_summary$algorithm <- factor(plot_summary$algorithm, levels = algorithm_levels)
+  plot_summary$scaling_method <- factor(plot_summary$scaling_method, levels = scaling_levels)
+  legend_grid <- best_scaling_per_algorithm(plot_summary)
+
+  output_file <- file.path(plot_dir, file_name)
+
+  grDevices::png(
+    filename = output_file,
+    width = 3600,
+    height = 1700,
+    res = 180,
+    pointsize = 18
+  )
+
+  old_par <- graphics::par(no.readonly = TRUE)
+  on.exit({
+    graphics::par(old_par)
+    grDevices::dev.off()
+  })
+
+  layout_matrix <- rbind(1:6, rep(7, 6))
+  graphics::layout(layout_matrix, heights = c(1, 0.30))
+  graphics::par(mar = c(5.0, 4.3, 4.0, 1.0), oma = c(0, 0, 6.0, 0))
+
+  panel_specs <- data.frame(
+    group_label = c(
+      rep("Continuous", 3),
+      rep("All binary", 3)
+    ),
+    metric_label = rep(c("F1 Score", "Recall", "Precision"), 2),
+    stringsAsFactors = FALSE
+  )
+
+  legend_labels <- paste(
+    algorithm_labels[legend_grid$algorithm],
+    "+",
+    legend_grid$scaling_method
+  )
+
+  for (panel_index in seq_len(nrow(panel_specs))) {
+    group_label <- panel_specs$group_label[panel_index]
+    metric_label <- panel_specs$metric_label[panel_index]
+    panel_data <- plot_summary[
+      plot_summary$group_label == group_label &
+        plot_summary$metric_label == metric_label,
+    ]
+    x_values <- sort(unique(panel_data$pk_imbalance_fraction))
+
+    graphics::plot(
+      x_values,
+      rep(NA_real_, length(x_values)),
+      type = "n",
+      ylim = c(0, 1),
+      xlab = "Proportion of binary predictors made rare/imbalanced",
+      ylab = if (panel_index %in% c(1, 4)) "Mean performance" else "",
+      main = metric_label,
+      xaxt = "n",
+      cex.lab = 0.94,
+      cex.main = 1.20,
+      cex.axis = 0.90
+    )
+    graphics::axis(1, at = x_values, labels = x_values, cex.axis = 0.88)
+    graphics::grid(col = "grey88")
+
+    for (i in seq_len(nrow(legend_grid))) {
+      algorithm <- legend_grid$algorithm[i]
+      scaling_method <- legend_grid$scaling_method[i]
+      combo_key <- paste(algorithm, scaling_method, sep = "_")
+      line_data <- panel_data[
+        panel_data$algorithm == algorithm &
+          panel_data$scaling_method == scaling_method,
+      ]
+
+      if (nrow(line_data) == 0) {
+        next
+      }
+
+      line_data <- line_data[order(line_data$pk_imbalance_fraction), ]
+      line_data <- line_data[!is.na(line_data$mean), ]
+
+      if (nrow(line_data) == 0) {
+        next
+      }
+
+      graphics::polygon(
+        x = c(line_data$pk_imbalance_fraction, rev(line_data$pk_imbalance_fraction)),
+        y = c(line_data$ci_low, rev(line_data$ci_high)),
+        col = grDevices::adjustcolor(combo_colours[combo_key], alpha.f = 0.08),
+        border = NA
+      )
+      graphics::lines(
+        line_data$pk_imbalance_fraction,
+        line_data$mean,
+        col = combo_colours[combo_key],
+        lwd = 2.7
+      )
+      graphics::points(
+        line_data$pk_imbalance_fraction,
+        line_data$mean,
+        col = combo_colours[combo_key],
+        pch = scaling_symbols[scaling_method],
+        cex = 1.0
+      )
+    }
+  }
+
+  graphics::mtext(
+    "Metrics within Continuous Predictors",
+    outer = TRUE,
+    side = 3,
+    at = 0.25,
+    line = 3.3,
+    cex = 1.15,
+    font = 2
+  )
+  graphics::mtext(
+    "Metrics within Binary Predictors",
+    outer = TRUE,
+    side = 3,
+    at = 0.75,
+    line = 3.3,
+    cex = 1.15,
+    font = 2
+  )
+  graphics::mtext(
+    paste0(
+      "Best-scaling group performance; bt = ",
+      binary_top_fraction_to_plot,
+      "; ev_xy = ",
+      ev_xy_to_plot,
+      "; ev_xx = ",
+      ev_xx_to_plot
+    ),
+    outer = TRUE,
+    side = 3,
+    line = 1.6,
+    cex = 0.90
+  )
+
+  graphics::par(mar = c(0, 0, 0, 0))
+  graphics::plot.new()
+  graphics::legend(
+    "center",
+    legend = legend_labels,
+    title = "Model + scaling",
+    col = combo_colours[paste(
+      legend_grid$algorithm,
+      legend_grid$scaling_method,
+      sep = "_"
+    )],
+    lty = 1,
+    pch = scaling_symbols[legend_grid$scaling_method],
+    lwd = 2.7,
+    cex = 0.78,
+    ncol = 4,
+    bty = "n"
+  )
+
+  invisible(output_file)
+}
+
+plot_rare_nonrare_metric_panel <- function(
+    binary_fraction = 0.5,
+    binary_top_fraction_to_plot = 0.05,
+    ev_xy_to_plot = 0.7,
+    ev_xx_to_plot = 0.7,
+    file_name = "rare_nonrare_metric_panel.png") {
+  plot_data <- raw_results[
+    raw_results$binary_fraction == binary_fraction &
+      raw_results$binary_top_fraction == binary_top_fraction_to_plot &
+      raw_results$ev_xy == ev_xy_to_plot &
+      raw_results$ev_xx == ev_xx_to_plot,
+  ]
+
+  if (nrow(plot_data) == 0) {
+    warning(
+      "No results found for binary_fraction = ",
+      binary_fraction,
+      ", binary_top_fraction = ",
+      binary_top_fraction_to_plot,
+      ", ev_xy = ",
+      ev_xy_to_plot,
+      ", ev_xx = ",
+      ev_xx_to_plot
+    )
+    return(invisible(NULL))
+  }
+
+  plot_summary <- rbind(
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "rare_binary_f1_score",
+      "F1 Score",
+      "Rare binary"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "rare_binary_recall",
+      "Recall",
+      "Rare binary"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "rare_binary_precision",
+      "Precision",
+      "Rare binary"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "nonrare_binary_f1_score",
+      "F1 Score",
+      "Non-rare binary"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "nonrare_binary_recall",
+      "Recall",
+      "Non-rare binary"
+    ),
+    summarise_binary_group_metric_with_label(
+      plot_data,
+      "nonrare_binary_precision",
+      "Precision",
+      "Non-rare binary"
+    )
+  )
+  plot_summary$algorithm <- factor(plot_summary$algorithm, levels = algorithm_levels)
+  plot_summary$scaling_method <- factor(plot_summary$scaling_method, levels = scaling_levels)
+  legend_grid <- best_scaling_per_algorithm(plot_summary)
+
+  output_file <- file.path(plot_dir, file_name)
+
+  grDevices::png(
+    filename = output_file,
+    width = 3600,
+    height = 1700,
+    res = 180,
+    pointsize = 18
+  )
+
+  old_par <- graphics::par(no.readonly = TRUE)
+  on.exit({
+    graphics::par(old_par)
+    grDevices::dev.off()
+  })
+
+  layout_matrix <- rbind(1:6, rep(7, 6))
+  graphics::layout(layout_matrix, heights = c(1, 0.30))
+  graphics::par(mar = c(5.0, 4.3, 4.0, 1.0), oma = c(0, 0, 6.0, 0))
+
+  panel_specs <- data.frame(
+    group_label = c(
+      rep("Rare binary", 3),
+      rep("Non-rare binary", 3)
+    ),
+    metric_label = rep(c("F1 Score", "Recall", "Precision"), 2),
+    stringsAsFactors = FALSE
+  )
+
+  legend_labels <- paste(
+    algorithm_labels[legend_grid$algorithm],
+    "+",
+    legend_grid$scaling_method
+  )
+
+  for (panel_index in seq_len(nrow(panel_specs))) {
+    group_label <- panel_specs$group_label[panel_index]
+    metric_label <- panel_specs$metric_label[panel_index]
+    panel_data <- plot_summary[
+      plot_summary$group_label == group_label &
+        plot_summary$metric_label == metric_label,
+    ]
+    x_values <- sort(unique(panel_data$pk_imbalance_fraction))
+
+    graphics::plot(
+      x_values,
+      rep(NA_real_, length(x_values)),
+      type = "n",
+      ylim = c(0, 1),
+      xlab = "Proportion of binary predictors made rare/imbalanced",
+      ylab = if (panel_index %in% c(1, 4)) "Mean performance" else "",
+      main = metric_label,
+      xaxt = "n",
+      cex.lab = 0.94,
+      cex.main = 1.20,
+      cex.axis = 0.90
+    )
+    graphics::axis(1, at = x_values, labels = x_values, cex.axis = 0.88)
+    graphics::grid(col = "grey88")
+
+    for (i in seq_len(nrow(legend_grid))) {
+      algorithm <- legend_grid$algorithm[i]
+      scaling_method <- legend_grid$scaling_method[i]
+      combo_key <- paste(algorithm, scaling_method, sep = "_")
+      line_data <- panel_data[
+        panel_data$algorithm == algorithm &
+          panel_data$scaling_method == scaling_method,
+      ]
+
+      if (nrow(line_data) == 0) {
+        next
+      }
+
+      line_data <- line_data[order(line_data$pk_imbalance_fraction), ]
+      line_data <- line_data[!is.na(line_data$mean), ]
+
+      if (nrow(line_data) == 0) {
+        next
+      }
+
+      graphics::polygon(
+        x = c(line_data$pk_imbalance_fraction, rev(line_data$pk_imbalance_fraction)),
+        y = c(line_data$ci_low, rev(line_data$ci_high)),
+        col = grDevices::adjustcolor(combo_colours[combo_key], alpha.f = 0.08),
+        border = NA
+      )
+      graphics::lines(
+        line_data$pk_imbalance_fraction,
+        line_data$mean,
+        col = combo_colours[combo_key],
+        lwd = 2.7
+      )
+      graphics::points(
+        line_data$pk_imbalance_fraction,
+        line_data$mean,
+        col = combo_colours[combo_key],
+        pch = scaling_symbols[scaling_method],
+        cex = 1.0
+      )
+    }
+  }
+
+  graphics::mtext(
+    "Metrics within Rare Binary Predictors",
+    outer = TRUE,
+    side = 3,
+    at = 0.25,
+    line = 3.3,
+    cex = 1.15,
+    font = 2
+  )
+  graphics::mtext(
+    "Metrics within Non-rare Binary Predictors",
+    outer = TRUE,
+    side = 3,
+    at = 0.75,
+    line = 3.3,
+    cex = 1.15,
+    font = 2
+  )
+  graphics::mtext(
+    paste0(
+      "Best-scaling group performance; bt = ",
+      binary_top_fraction_to_plot,
+      "; ev_xy = ",
+      ev_xy_to_plot,
+      "; ev_xx = ",
+      ev_xx_to_plot
+    ),
+    outer = TRUE,
+    side = 3,
+    line = 1.6,
+    cex = 0.90
+  )
+
+  graphics::par(mar = c(0, 0, 0, 0))
+  graphics::plot.new()
+  graphics::legend(
+    "center",
+    legend = legend_labels,
+    title = "Model + scaling",
+    col = combo_colours[paste(
+      legend_grid$algorithm,
+      legend_grid$scaling_method,
+      sep = "_"
+    )],
+    lty = 1,
+    pch = scaling_symbols[legend_grid$scaling_method],
+    lwd = 2.7,
+    cex = 0.78,
     ncol = 4,
     bty = "n"
   )
@@ -1852,28 +2834,60 @@ created_files <- unlist(
     ev_xx_to_plot <- available_slices$ev_xx[i]
 
     c(
-      plot_rare_vs_nonrare_recall(
+      plot_group_metric_by_rare_levels(
+        comparison = "rare_vs_nonrare",
+        metric_to_plot = "F1 Score",
         binary_fraction = binary_fraction_to_plot,
         ev_xy_to_plot = ev_xy_to_plot,
         ev_xx_to_plot = ev_xx_to_plot,
         file_name = paste0(
-          "rare_vs_nonrare_recall_with_stability_by_pk_evxy_",
+          "xy",
           format_file_value(ev_xy_to_plot),
-          "_evxx_",
+          "_xx",
           format_file_value(ev_xx_to_plot),
-          ".png"
+          "_best_scaling_rare_vs_nonrare_all_bt_f1.png"
         )
       ),
-      plot_binary_vs_continuous_recall(
+      plot_group_metric_by_rare_levels(
+        comparison = "rare_vs_nonrare",
+        metric_to_plot = "Recall",
         binary_fraction = binary_fraction_to_plot,
         ev_xy_to_plot = ev_xy_to_plot,
         ev_xx_to_plot = ev_xx_to_plot,
         file_name = paste0(
-          "binary_vs_continuous_recall_with_stability_by_pk_evxy_",
+          "xy",
           format_file_value(ev_xy_to_plot),
-          "_evxx_",
+          "_xx",
           format_file_value(ev_xx_to_plot),
-          ".png"
+          "_best_scaling_rare_vs_nonrare_all_bt_recall.png"
+        )
+      ),
+      plot_group_metric_by_rare_levels(
+        comparison = "binary_vs_continuous",
+        metric_to_plot = "F1 Score",
+        binary_fraction = binary_fraction_to_plot,
+        ev_xy_to_plot = ev_xy_to_plot,
+        ev_xx_to_plot = ev_xx_to_plot,
+        file_name = paste0(
+          "xy",
+          format_file_value(ev_xy_to_plot),
+          "_xx",
+          format_file_value(ev_xx_to_plot),
+          "_best_scaling_binary_vs_continuous_all_bt_f1.png"
+        )
+      ),
+      plot_group_metric_by_rare_levels(
+        comparison = "binary_vs_continuous",
+        metric_to_plot = "Recall",
+        binary_fraction = binary_fraction_to_plot,
+        ev_xy_to_plot = ev_xy_to_plot,
+        ev_xx_to_plot = ev_xx_to_plot,
+        file_name = paste0(
+          "xy",
+          format_file_value(ev_xy_to_plot),
+          "_xx",
+          format_file_value(ev_xx_to_plot),
+          "_best_scaling_binary_vs_continuous_all_bt_recall.png"
         )
       ),
       plot_rare_nonrare_recall_f1_four_panel(
@@ -1882,38 +2896,65 @@ created_files <- unlist(
         ev_xy_to_plot = ev_xy_to_plot,
         ev_xx_to_plot = ev_xx_to_plot,
         file_name = paste0(
-          "rare_nonrare_recall_f1_four_panel_with_stability_rare_0_05_evxy_",
+          "xy",
           format_file_value(ev_xy_to_plot),
-          "_evxx_",
+          "_xx",
           format_file_value(ev_xx_to_plot),
-          ".png"
+          "_bt0_05_best_scaling_rare_vs_nonrare_recall_f1.png"
         )
       ),
-      plot_binary_group_recall_f1(
-        group_to_plot = "rare_binary",
-        binary_fraction = binary_fraction_to_plot,
-        ev_xy_to_plot = ev_xy_to_plot,
-        ev_xx_to_plot = ev_xx_to_plot,
-        file_name = paste0(
-          "rare_binary_recall_f1_with_stability_evxy_",
-          format_file_value(ev_xy_to_plot),
-          "_evxx_",
-          format_file_value(ev_xx_to_plot),
-          ".png"
-        )
-      ),
-      plot_binary_group_recall_f1(
-        group_to_plot = "nonrare_binary",
-        binary_fraction = binary_fraction_to_plot,
-        ev_xy_to_plot = ev_xy_to_plot,
-        ev_xx_to_plot = ev_xx_to_plot,
-        file_name = paste0(
-          "nonrare_binary_recall_f1_with_stability_evxy_",
-          format_file_value(ev_xy_to_plot),
-          "_evxx_",
-          format_file_value(ev_xx_to_plot),
-          ".png"
-        )
+      unlist(
+        lapply(c(0.5, 0.2, 0.1, 0.05), function(binary_top_fraction_to_plot) {
+          c(
+            plot_binary_continuous_recall_f1_four_panel(
+              binary_fraction = binary_fraction_to_plot,
+              binary_top_fraction_to_plot = binary_top_fraction_to_plot,
+              ev_xy_to_plot = ev_xy_to_plot,
+              ev_xx_to_plot = ev_xx_to_plot,
+              file_name = paste0(
+                "xy",
+                format_file_value(ev_xy_to_plot),
+                "_xx",
+                format_file_value(ev_xx_to_plot),
+                "_bt",
+                format_file_value(binary_top_fraction_to_plot),
+                "_best_scaling_binary_vs_continuous_recall_f1.png"
+              )
+            ),
+            plot_binary_continuous_metric_panel(
+              binary_fraction = binary_fraction_to_plot,
+              binary_top_fraction_to_plot = binary_top_fraction_to_plot,
+              ev_xy_to_plot = ev_xy_to_plot,
+              ev_xx_to_plot = ev_xx_to_plot,
+              file_name = paste0(
+                "xy",
+                format_file_value(ev_xy_to_plot),
+                "_xx",
+                format_file_value(ev_xx_to_plot),
+                "_bt",
+                format_file_value(binary_top_fraction_to_plot),
+                "_best_scaling_within_binary_continuous_metrics.png"
+              )
+            )
+            ,
+            plot_rare_nonrare_metric_panel(
+              binary_fraction = binary_fraction_to_plot,
+              binary_top_fraction_to_plot = binary_top_fraction_to_plot,
+              ev_xy_to_plot = ev_xy_to_plot,
+              ev_xx_to_plot = ev_xx_to_plot,
+              file_name = paste0(
+                "xy",
+                format_file_value(ev_xy_to_plot),
+                "_xx",
+                format_file_value(ev_xx_to_plot),
+                "_bt",
+                format_file_value(binary_top_fraction_to_plot),
+                "_best_scaling_within_rare_nonrare_metrics.png"
+              )
+            )
+          )
+        }),
+        use.names = FALSE
       )
     )
   }),

@@ -1354,6 +1354,16 @@ format_file_value <- function(value) {
   gsub("\\.", "_", format(value, trim = TRUE, scientific = FALSE))
 }
 
+format_metric_file_value <- function(metric_name) {
+  switch(
+    metric_name,
+    f1_score = "f1",
+    recall = "recall",
+    precision = "precision",
+    metric_name
+  )
+}
+
 plot_scaling_analysis_by_correlation_slices <- function(
     binary_fraction = 0.5,
     binary_top_fraction = 0.05,
@@ -1682,8 +1692,7 @@ created_slice_files <- unlist(
 
 available_algorithm_scenarios <- unique(
   scenario_plot_results[
-    scenario_plot_results$binary_fraction == binary_fraction_to_plot &
-      scenario_plot_results$binary_top_fraction != 0.5,
+    scenario_plot_results$binary_fraction == binary_fraction_to_plot,
     c("binary_top_fraction", "pk_imbalance_fraction", "ev_xx")
   ]
 )
@@ -1710,14 +1719,14 @@ created_five_panel_files <- unlist(
           ev_xx_to_plot = ev_xx_to_plot,
           metric_to_plot = metric_to_plot,
           file_name = paste0(
-            "algorithm_scaling_five_panel_",
-            metric_to_plot,
-            "_bintop_",
+            format_metric_file_value(metric_to_plot),
+            "_bt",
             format_file_value(binary_top_fraction_to_plot),
             "_pk_",
             format_file_value(pk_imbalance_fraction_to_plot),
-            "_evxx_",
+            "_xx",
             format_file_value(ev_xx_to_plot),
+            "_fp",
             ".png"
           )
         )
