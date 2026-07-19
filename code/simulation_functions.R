@@ -158,8 +158,8 @@ scale_matrix <- function(x, method, binary_columns = integer(0)) {
 
   scale_columns <- seq_len(ncol(x))
 
-  if (method == "2sd") {
-    # Two-SD scaling is only applied to continuous predictors.
+  if (method %in% c("cont", "2sd")) {
+    # For mixed data, keep binary predictors unchanged and scale continuous ones.
     scale_columns <- setdiff(scale_columns, binary_columns)
   }
 
@@ -172,7 +172,7 @@ scale_matrix <- function(x, method, binary_columns = integer(0)) {
 
   if (method == "2sd") {
     spread <- 2 * spread
-  } else if (method != "zscore") {
+  } else if (!method %in% c("zscore", "cont")) {
     stop("Unknown scaling method: ", method)
   }
 
@@ -732,7 +732,7 @@ run_one_imbalance_scenario <- function(seed,
 
 run_imbalance_benchmark <- function(
     seeds = 1:10,
-    scaling_methods = c("none", "zscore", "2sd"),
+    scaling_methods = c("cont", "zscore", "2sd"),
     dimension_scenarios = data.frame(n = 1000, pk = 100),
     binary_fraction_values = c(0.5),
     binary_top_fractions = c(0.5, 0.2, 0.1, 0.05),

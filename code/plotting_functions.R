@@ -88,9 +88,9 @@ run_metric_plots <- function() {
     stringsAsFactors = FALSE
   )
 
-  scaling_levels <- c("none", "zscore", "2sd")
-  scaling_labels <- c(none = "No scaling", zscore = "Z-score", `2sd` = "2 SD")
-  scaling_symbols <- c(none = 16, zscore = 17, `2sd` = 15)
+  scaling_levels <- c("cont", "zscore", "2sd")
+  scaling_labels <- c(none = "No scaling", cont = "Continuous only", zscore = "Z-score", `2sd` = "2 SD")
+  scaling_symbols <- c(none = 16, cont = 16, zscore = 17, `2sd` = 15)
   algorithm_labels <- c(
     cv_lasso_min = "lambda.min",
     cv_lasso_1se = "lambda.1se",
@@ -99,15 +99,19 @@ run_metric_plots <- function() {
   )
   line_colours <- c(
     cv_lasso_min__none = "#1f77b4",
+    cv_lasso_min__cont = "#1f77b4",
     cv_lasso_min__zscore = "#17becf",
     cv_lasso_min__2sd = "#9467bd",
     cv_lasso_1se__none = "#ff7f0e",
+    cv_lasso_1se__cont = "#ff7f0e",
     cv_lasso_1se__zscore = "#bcbd22",
     cv_lasso_1se__2sd = "#d62728",
     ncat_null__none = "#2ca02c",
+    ncat_null__cont = "#2ca02c",
     ncat_null__zscore = "#20a386",
     ncat_null__2sd = "#8dd3c7",
     ncat_3__none = "#CC79A7",
+    ncat_3__cont = "#CC79A7",
     ncat_3__zscore = "#D65F9E",
     ncat_3__2sd = "#B07AA1"
   )
@@ -654,6 +658,7 @@ run_subgroup_plots <- function() {
         group = c("rare_binary", "nonrare_binary"),
         label = c("Rare binary", "Non-rare binary"),
         colour_none = c("#D55E00", "#0072B2"),
+        colour_cont = c("#D55E00", "#0072B2"),
         colour_zscore = c("#E69F00", "#56B4E9"),
         colour_2sd = c("#A65E00", "#004C8C"),
         stringsAsFactors = FALSE
@@ -666,6 +671,7 @@ run_subgroup_plots <- function() {
         group = c("binary", "continuous"),
         label = c("Binary", "Continuous"),
         colour_none = c("#009E73", "#CC79A7"),
+        colour_cont = c("#009E73", "#CC79A7"),
         colour_zscore = c("#66C2A5", "#F781BF"),
         colour_2sd = c("#006D4F", "#984EA3"),
         stringsAsFactors = FALSE
@@ -673,9 +679,9 @@ run_subgroup_plots <- function() {
     )
   )
 
-  scaling_levels <- c("none", "zscore", "2sd")
-  scaling_labels <- c(none = "No scaling", zscore = "Z-score", `2sd` = "2 SD")
-  scaling_symbols <- c(none = 16, zscore = 17, `2sd` = 15)
+  scaling_levels <- c("cont", "zscore", "2sd")
+  scaling_labels <- c(none = "No scaling", cont = "Continuous only", zscore = "Z-score", `2sd` = "2 SD")
+  scaling_symbols <- c(none = 16, cont = 16, zscore = 17, `2sd` = 15)
   algorithm_labels <- c(
     cv_lasso_min = "lambda.min",
     cv_lasso_1se = "lambda.1se",

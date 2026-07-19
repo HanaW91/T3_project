@@ -4,6 +4,7 @@ source(file.path("code", "simulation_functions.R"))
 
 imbalance_run <- run_imbalance_benchmark(
   seeds = 1:10,
+  scaling_methods = c("none", "zscore"),
   dimension_scenarios = data.frame(n = 100, pk = 1000),
   binary_fraction_values = c(1),
   binary_top_fractions = c(0.5, 0.2, 0.1, 0.05),
