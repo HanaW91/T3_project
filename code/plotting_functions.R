@@ -4,7 +4,7 @@
 # - moved metric and subgroup plotting code into this shared file
 # - keep the plot scripts as short drivers
 # - plot F1, recall, and precision for selection performance
-# - use sharp_lasso as the stability-selection method label
+# - compare sharp stability selection with n_cat = NULL and n_cat = 3
 
 run_metric_plots <- function() {
   # Metric grids for LASSO and stability-selection LASSO.
@@ -78,7 +78,7 @@ run_metric_plots <- function() {
     list(
       method_id = "stab_lasso",
       method_label = "Stability LASSO",
-      algorithms = c("sharp_lasso")
+      algorithms = c("ncat_null", "ncat_3")
     )
   )
 
@@ -94,7 +94,8 @@ run_metric_plots <- function() {
   algorithm_labels <- c(
     cv_lasso_min = "lambda.min",
     cv_lasso_1se = "lambda.1se",
-    sharp_lasso = "sharp"
+    ncat_null = "n_cat=NULL",
+    ncat_3 = "n_cat=3"
   )
   line_colours <- c(
     cv_lasso_min__none = "#1f77b4",
@@ -103,9 +104,12 @@ run_metric_plots <- function() {
     cv_lasso_1se__none = "#ff7f0e",
     cv_lasso_1se__zscore = "#bcbd22",
     cv_lasso_1se__2sd = "#d62728",
-    sharp_lasso__none = "#2ca02c",
-    sharp_lasso__zscore = "#20a386",
-    sharp_lasso__2sd = "#8dd3c7"
+    ncat_null__none = "#2ca02c",
+    ncat_null__zscore = "#20a386",
+    ncat_null__2sd = "#8dd3c7",
+    ncat_3__none = "#CC79A7",
+    ncat_3__zscore = "#D65F9E",
+    ncat_3__2sd = "#B07AA1"
   )
 
   format_file_value <- function(value) {
@@ -632,7 +636,7 @@ run_subgroup_plots <- function() {
     list(
       method_id = "stab_lasso",
       method_label = "Stability LASSO",
-      algorithms = c("sharp_lasso")
+      algorithms = c("ncat_null", "ncat_3")
     )
   )
 
@@ -675,12 +679,14 @@ run_subgroup_plots <- function() {
   algorithm_labels <- c(
     cv_lasso_min = "lambda.min",
     cv_lasso_1se = "lambda.1se",
-    sharp_lasso = "sharp"
+    ncat_null = "n_cat=NULL",
+    ncat_3 = "n_cat=3"
   )
   algorithm_line_types <- c(
     cv_lasso_min = 1,
     cv_lasso_1se = 2,
-    sharp_lasso = 1
+    ncat_null = 1,
+    ncat_3 = 2
   )
 
   required_base_columns <- c(

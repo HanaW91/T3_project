@@ -415,53 +415,62 @@ fit_sharp_lasso <- function(x,
                             repetitions = 100,
                             subsample_fraction = 0.5,
                             nlambda = 50,
+                            n_cat_values = list(NULL, 3),
                             n_cores = 1,
                             seed = 1) {
   if (is.null(colnames(x))) {
     colnames(x) <- paste0("V", seq_len(ncol(x)))
   }
 
-  # Stability selection is handled by sharp rather than custom subsampling code.
-  stability <- sharp::VariableSelection(
-    xdata = x,
-    ydata = y,
-    family = "gaussian",
-    K = repetitions,
-    tau = subsample_fraction,
-    Lambda_cardinal = nlambda,
-    seed = seed,
-    n_cores = n_cores,
-    verbose = FALSE
-  )
-  selected_raw <- sharp::SelectedVariables(stability)
+  fits <- lapply(seq_along(n_cat_values), function(i) {
+    n_cat <- n_cat_values[[i]]
+    algorithm_name <- if (is.null(n_cat)) "ncat_null" else paste0("ncat_", n_cat)
 
-  # SelectedVariables can return names, indices, or a selection vector.
-  selected_vector <- as.vector(selected_raw)
-  if (is.logical(selected_vector) && length(selected_vector) == ncol(x)) {
-    selected <- which(selected_vector)
-  } else if (
-    is.numeric(selected_vector) &&
-      length(selected_vector) == ncol(x) &&
-      all(stats::na.omit(selected_vector) %in% c(0, 1))
-  ) {
-    selected <- which(selected_vector != 0)
-  } else if (is.numeric(selected_vector)) {
-    selected <- as.integer(selected_vector)
-  } else {
-    selected <- match(as.character(selected_vector), colnames(x))
-  }
-  selected <- sort(unique(selected[!is.na(selected) & selected >= 1 & selected <= ncol(x)]))
+    # Stability selection is handled by sharp rather than custom subsampling code.
+    stability <- sharp::VariableSelection(
+      xdata = x,
+      ydata = y,
+      family = "gaussian",
+      K = repetitions,
+      tau = subsample_fraction,
+      Lambda_cardinal = nlambda,
+      seed = seed + i,
+      n_cat = n_cat,
+      n_cores = n_cores,
+      verbose = FALSE
+    )
+    selected_raw <- sharp::SelectedVariables(stability)
 
-  list(
-    sharp_lasso = list(
+    # SelectedVariables can return names, indices, or a selection vector.
+    selected_vector <- as.vector(selected_raw)
+    if (is.logical(selected_vector) && length(selected_vector) == ncol(x)) {
+      selected <- which(selected_vector)
+    } else if (
+      is.numeric(selected_vector) &&
+        length(selected_vector) == ncol(x) &&
+        all(stats::na.omit(selected_vector) %in% c(0, 1))
+    ) {
+      selected <- which(selected_vector != 0)
+    } else if (is.numeric(selected_vector)) {
+      selected <- as.integer(selected_vector)
+    } else {
+      selected <- match(as.character(selected_vector), colnames(x))
+    }
+    selected <- sort(unique(selected[!is.na(selected) & selected >= 1 & selected <= ncol(x)]))
+
+    fit <- list(
       selected = selected,
       lambda = NA_real_,
+      n_cat = if (is.null(n_cat)) NA_real_ else n_cat,
       stability_repetitions = repetitions,
       stability_subsample_fraction = subsample_fraction,
       max_selection_count = NA_real_,
       mean_selection_count = NA_real_
     )
-  )
+    stats::setNames(list(fit), algorithm_name)
+  })
+
+  do.call(c, fits)
 }
 
 simulate_one_dataset <- function(seed,
@@ -552,6 +561,7 @@ evaluate_one_scaling <- function(dat,
                                  include_stability = TRUE,
                                  stability_repetitions = 100,
                                  stability_subsample_fraction = 0.5,
+                                 sharp_n_cat_values = list(NULL, 3),
                                  n_cores = 1,
                                  collect_predictor_metadata = TRUE) {
   # Fit all methods to one scaled version of the same simulated dataset.
@@ -566,6 +576,7 @@ evaluate_one_scaling <- function(dat,
         repetitions = stability_repetitions,
         subsample_fraction = stability_subsample_fraction,
         nlambda = nlambda,
+        n_cat_values = sharp_n_cat_values,
         n_cores = n_cores,
         seed = seed + 4000
       )
@@ -597,6 +608,7 @@ evaluate_one_scaling <- function(dat,
         continuous_predictors = ncol(dat$x) - length(dat$binary_columns),
         lambda = fit$lambda,
         ncut = NA_real_,
+        n_cat = if (!is.null(fit$n_cat)) fit$n_cat else NA_real_,
         stability_repetitions = if (!is.null(fit$stability_repetitions)) fit$stability_repetitions else NA_real_,
         stability_subsample_fraction = if (!is.null(fit$stability_subsample_fraction)) {
           fit$stability_subsample_fraction
@@ -669,6 +681,7 @@ run_one_imbalance_scenario <- function(seed,
                                        include_stability = TRUE,
                                        stability_repetitions = 100,
                                        stability_subsample_fraction = 0.5,
+                                       sharp_n_cat_values = list(NULL, 3),
                                        n_cores = 1,
                                        collect_predictor_metadata = TRUE) {
   # Generate the dataset once, then evaluate every scaling method on it.
@@ -701,6 +714,7 @@ run_one_imbalance_scenario <- function(seed,
       include_stability = include_stability,
       stability_repetitions = stability_repetitions,
       stability_subsample_fraction = stability_subsample_fraction,
+      sharp_n_cat_values = sharp_n_cat_values,
       n_cores = n_cores,
       collect_predictor_metadata = collect_predictor_metadata
     )
@@ -731,6 +745,7 @@ run_imbalance_benchmark <- function(
     include_stability = TRUE,
     stability_repetitions = 100,
     stability_subsample_fraction = 0.5,
+    sharp_n_cat_values = list(NULL, 3),
     n_cores = default_n_cores(),
     collect_predictor_metadata = TRUE) {
   # Balanced baseline plus the rare-category scenarios
@@ -768,9 +783,9 @@ run_imbalance_benchmark <- function(
     " generated datasets x ",
     length(scaling_methods),
     " scaling methods x ",
-    2 + as.integer(include_stability),
+    2 + if (include_stability) length(sharp_n_cat_values) else 0,
     " algorithms = ",
-    nrow(grid) * length(scaling_methods) * (2 + as.integer(include_stability)),
+    nrow(grid) * length(scaling_methods) * (2 + if (include_stability) length(sharp_n_cat_values) else 0),
     " result rows."
   )
 
@@ -796,6 +811,7 @@ run_imbalance_benchmark <- function(
       include_stability = include_stability,
       stability_repetitions = stability_repetitions,
       stability_subsample_fraction = stability_subsample_fraction,
+      sharp_n_cat_values = sharp_n_cat_values,
       n_cores = n_cores,
       collect_predictor_metadata = collect_predictor_metadata
     )
