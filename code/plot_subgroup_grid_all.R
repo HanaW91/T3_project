@@ -1,4 +1,4 @@
-﻿# Driver for subgroup benchmark plots.
+# Driver for subgroup benchmark plots.
 
 source(file.path("code", "plotting_functions.R"))
 

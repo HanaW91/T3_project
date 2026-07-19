@@ -1,4 +1,4 @@
-﻿# Driver for metric-grid benchmark plots.
+# Driver for metric-grid benchmark plots.
 
 source(file.path("code", "plotting_functions.R"))
 

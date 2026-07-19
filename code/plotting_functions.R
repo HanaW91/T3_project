@@ -1,4 +1,4 @@
-﻿# Shared plotting functions for metric and subgroup benchmark plots.
+# Shared plotting functions for metric and subgroup benchmark plots.
 #
 # Main updates:
 # - moved metric and subgroup plotting code into this shared file
