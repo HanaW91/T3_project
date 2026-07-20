@@ -437,6 +437,7 @@ fit_sharp_lasso <- function(x,
       seed = seed + i,
       n_cat = n_cat,
       n_cores = n_cores,
+      standardize = FALSE,
       verbose = FALSE
     )
     selected_raw <- sharp::SelectedVariables(stability)
