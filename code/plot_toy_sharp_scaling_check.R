@@ -107,8 +107,8 @@ make_plot_data <- function(data) {
   summary_data
 }
 
-plot_panel <- function(plot_data, metric, metric_label, row_label, scaling_methods, show_y_label) {
-  panel_data <- subset(plot_data, metric == metric)
+plot_panel <- function(plot_data, metric_name, metric_label, row_label, scaling_methods, show_y_label) {
+  panel_data <- plot_data[plot_data$metric == metric_name, ]
   x_values <- sort(unique(plot_data$rarity_x))
   x_labels <- plot_data$rarity_label[match(x_values, plot_data$rarity_x)]
 
@@ -176,6 +176,8 @@ plot_toy_result <- function(result_set) {
   plot_data <- make_plot_data(raw_results)
   ev_xy <- unique(plot_data$ev_xy)[1]
   ev_xx <- unique(plot_data$ev_xx)[1]
+  noise_label <- paste0("Medium noise (evxy = ", ev_xy, ")")
+  corr_label <- paste0("Medium corr (evxx = ", ev_xx, ")")
 
   output_file <- file.path(
     plot_dir,
@@ -201,7 +203,7 @@ plot_toy_result <- function(result_set) {
   graphics::text(
     0.5,
     0.5,
-    paste0("Toy check: evxy = ", ev_xy, ", evxx = ", ev_xx),
+    noise_label,
     cex = 1.75,
     font = 2
   )
@@ -210,9 +212,9 @@ plot_toy_result <- function(result_set) {
     graphics::par(mar = c(4.4, 5.4, 2.6, 1.2))
     plot_panel(
       plot_data = plot_data,
-      metric = metric_specs$metric[metric_index],
+      metric_name = metric_specs$metric[metric_index],
       metric_label = metric_specs$label[metric_index],
-      row_label = "Medium corr",
+      row_label = corr_label,
       scaling_methods = result_set$scaling_methods,
       show_y_label = metric_index == 1
     )
@@ -242,7 +244,7 @@ plot_toy_result <- function(result_set) {
   )
 
   graphics::mtext(
-    paste0("Toy sharp scaling check: ", result_set$label),
+    "Stability LASSO selection performance across rarity and correlation",
     outer = TRUE,
     side = 3,
     line = 3.8,
@@ -250,7 +252,13 @@ plot_toy_result <- function(result_set) {
     font = 2
   )
   graphics::mtext(
-    "Small diagnostic run only; ribbons show 95% CI over toy seeds",
+    paste0(
+      "Algorithms: ",
+      paste(algorithm_labels[c("ncat_null", "ncat_3")], collapse = " and "),
+      "; dataset = ",
+      result_set$label,
+      "; pk imbalance = 0.2; ribbons show 95% CI over seeds"
+    ),
     outer = TRUE,
     side = 3,
     line = 2.2,
