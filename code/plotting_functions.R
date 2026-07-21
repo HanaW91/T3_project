@@ -880,13 +880,13 @@ run_subgroup_plots <- function() {
       ylab = if (show_y_label) row_label else "",
       main = metric_label,
       xaxt = "n",
-      cex.lab = 1.0,
-      cex.main = 1.2,
-      cex.axis = 0.86
+      cex.lab = 1.20,
+      cex.main = 1.38,
+      cex.axis = 1.02
     )
 
-    graphics::axis(1, at = x_values, labels = x_labels, cex.axis = 0.78)
-    graphics::grid(col = "grey88")
+    graphics::axis(1, at = x_values, labels = x_labels, cex.axis = 0.96)
+    graphics::grid(col = "grey92")
 
     for (group_index in seq_len(nrow(subgroup_spec$groups))) {
       group_id <- subgroup_spec$groups$group[group_index]
@@ -914,7 +914,7 @@ run_subgroup_plots <- function() {
           graphics::polygon(
             x = c(line_data$rarity_x, rev(line_data$rarity_x)),
             y = c(line_data$ci_low, rev(line_data$ci_high)),
-            col = grDevices::adjustcolor(line_colour, alpha.f = 0.04),
+            col = grDevices::adjustcolor(line_colour, alpha.f = 0.025),
             border = NA
           )
 
@@ -923,7 +923,7 @@ run_subgroup_plots <- function() {
             line_data$mean,
             col = line_colour,
             lty = line_type,
-            lwd = 2.1
+            lwd = 2.6
           )
 
           graphics::points(
@@ -931,7 +931,7 @@ run_subgroup_plots <- function() {
             line_data$mean,
             col = line_colour,
             pch = scaling_symbols[scaling_method],
-            cex = 0.80
+            cex = 1.00
           )
         }
       }
@@ -1041,14 +1041,14 @@ run_subgroup_plots <- function() {
       graphics::par(mar = c(0, 0, 0, 0))
       graphics::plot.new()
       graphics::rect(0.01, 0.08, 0.99, 0.92, border = "grey70", lwd = 1.2)
-      graphics::text(0.5, 0.5, labels = block_label, cex = 1.95, font = 2)
+      graphics::text(0.5, 0.5, labels = block_label, cex = 2.15, font = 2)
 
       for (corr_index in seq_along(ev_xx_rows_to_plot)) {
         ev_xx_value <- as.numeric(ev_xx_rows_to_plot[corr_index])
         row_index <- row_index + 1
 
         for (metric_index in seq_len(n_metric)) {
-          graphics::par(mar = c(3.7, 5.6, 2.2, 0.9))
+          graphics::par(mar = c(4.0, 6.0, 2.4, 1.0))
 
           plot_subgroup_panel(
             plot_data = plot_data,
@@ -1072,7 +1072,7 @@ run_subgroup_plots <- function() {
       outer = TRUE,
       side = 3,
       line = 5.4,
-      cex = 1.35,
+      cex = 1.52,
       font = 2
     )
 
@@ -1090,7 +1090,7 @@ run_subgroup_plots <- function() {
       outer = TRUE,
       side = 3,
       line = 3.5,
-      cex = 0.88
+      cex = 1.00
     )
 
     graphics::par(mar = c(0, 0, 0, 0))
@@ -1106,7 +1106,7 @@ run_subgroup_plots <- function() {
       lty = 1,
       lwd = 3.0,
       bty = "n",
-      cex = 0.95,
+      cex = 1.08,
       title.adj = 0
     )
 
@@ -1119,7 +1119,7 @@ run_subgroup_plots <- function() {
       lty = algorithm_line_types[method_spec$algorithms],
       lwd = 3.0,
       bty = "n",
-      cex = 0.95,
+      cex = 1.08,
       title.adj = 0
     )
 
@@ -1133,8 +1133,8 @@ run_subgroup_plots <- function() {
       lty = 1,
       lwd = 3.0,
       bty = "n",
-      cex = 0.95,
-      pt.cex = 1.30,
+      cex = 1.08,
+      pt.cex = 1.45,
       title.adj = 0
     )
 
