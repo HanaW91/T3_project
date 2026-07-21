@@ -1080,7 +1080,7 @@ run_subgroup_plots <- function() {
       paste0(
         "Algorithms: ",
         paste(algorithm_labels[method_spec$algorithms], collapse = " and "),
-        "; scaling methods shown together",
+        "; colour = subgroup, line style = algorithm, point = scaling",
         "; dataset = ",
         result_set$label,
         "; pk imbalance = ",
@@ -1095,41 +1095,47 @@ run_subgroup_plots <- function() {
 
     graphics::par(mar = c(0, 0, 0, 0))
     graphics::plot.new()
-    legend_grid <- expand.grid(
-      subgroup_index = seq_len(nrow(subgroup_spec$groups)),
-      algorithm = method_spec$algorithms,
-      scaling_method = scaling_methods_to_plot,
-      stringsAsFactors = FALSE
-    )
-    legend_labels <- paste(
-      subgroup_spec$groups$label[legend_grid$subgroup_index],
-      "+",
-      algorithm_labels[legend_grid$algorithm],
-      "+",
-      scaling_labels[legend_grid$scaling_method]
-    )
-    legend_colours <- mapply(
-      function(group_index, scaling_method) {
-        subgroup_scaling_colour(
-          subgroup_spec = subgroup_spec,
-          group_index = group_index,
-          scaling_method = scaling_method
-        )
-      },
-      group_index = legend_grid$subgroup_index,
-      scaling_method = legend_grid$scaling_method
-    )
+    graphics::plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
+
     graphics::legend(
-      "center",
-      legend = legend_labels,
-      col = legend_colours,
-      pch = scaling_symbols[legend_grid$scaling_method],
-      lty = algorithm_line_types[legend_grid$algorithm],
+      x = 0.03,
+      y = 0.86,
+      title = "Subgroup",
+      legend = subgroup_spec$groups$label,
+      col = subgroup_spec$groups$colour_none,
+      lty = 1,
       lwd = 3.0,
-      ncol = 3,
       bty = "n",
-      cex = 0.86,
-      pt.cex = 1.25
+      cex = 0.95,
+      title.adj = 0
+    )
+
+    graphics::legend(
+      x = 0.37,
+      y = 0.86,
+      title = "Algorithm",
+      legend = algorithm_labels[method_spec$algorithms],
+      col = "grey20",
+      lty = algorithm_line_types[method_spec$algorithms],
+      lwd = 3.0,
+      bty = "n",
+      cex = 0.95,
+      title.adj = 0
+    )
+
+    graphics::legend(
+      x = 0.67,
+      y = 0.86,
+      title = "Scaling",
+      legend = scaling_labels[scaling_methods_to_plot],
+      col = "grey20",
+      pch = scaling_symbols[scaling_methods_to_plot],
+      lty = 1,
+      lwd = 3.0,
+      bty = "n",
+      cex = 0.95,
+      pt.cex = 1.30,
+      title.adj = 0
     )
 
     invisible(output_file)
