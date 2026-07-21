@@ -252,12 +252,12 @@ run_metric_plots <- function() {
       ylab = if (show_y_label) row_label else "",
       main = metric_label,
       xaxt = "n",
-      cex.lab = 1.05,
-      cex.main = 1.25,
-      cex.axis = 0.95
+      cex.lab = 1.35,
+      cex.main = 1.50,
+      cex.axis = 1.02
     )
 
-    graphics::axis(1, at = x_values, labels = x_labels, cex.axis = 0.85)
+    graphics::axis(1, at = x_values, labels = x_labels, cex.axis = 1.15)
     graphics::grid(col = "grey88")
 
     for (algorithm in algorithms) {
@@ -278,7 +278,7 @@ run_metric_plots <- function() {
         graphics::polygon(
           x = c(line_data$rarity_x, rev(line_data$rarity_x)),
           y = c(line_data$ci_low, rev(line_data$ci_high)),
-          col = grDevices::adjustcolor(line_colour, alpha.f = 0.10),
+          col = grDevices::adjustcolor(line_colour, alpha.f = 0.06),
           border = NA
         )
 
@@ -880,12 +880,12 @@ run_subgroup_plots <- function() {
       ylab = if (show_y_label) row_label else "",
       main = metric_label,
       xaxt = "n",
-      cex.lab = 1.20,
-      cex.main = 1.38,
+      cex.lab = 1.35,
+      cex.main = 1.50,
       cex.axis = 1.02
     )
 
-    graphics::axis(1, at = x_values, labels = x_labels, cex.axis = 0.96)
+    graphics::axis(1, at = x_values, labels = x_labels, cex.axis = 1.15)
     graphics::grid(col = "grey92")
 
     for (group_index in seq_len(nrow(subgroup_spec$groups))) {
@@ -914,7 +914,7 @@ run_subgroup_plots <- function() {
           graphics::polygon(
             x = c(line_data$rarity_x, rev(line_data$rarity_x)),
             y = c(line_data$ci_low, rev(line_data$ci_high)),
-            col = grDevices::adjustcolor(line_colour, alpha.f = 0.025),
+            col = grDevices::adjustcolor(line_colour, alpha.f = 0.06),
             border = NA
           )
 
