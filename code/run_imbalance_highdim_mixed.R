@@ -7,7 +7,7 @@ imbalance_run <- run_imbalance_benchmark(
   dimension_scenarios = data.frame(n = 100, pk = 1000),
   binary_fraction_values = c(0.5),
   binary_top_fractions = c(0.5, 0.2, 0.1, 0.05),
-  pk_imbalance_fractions = c(0.1, 0.2, 0.5, 0.8),
+  pk_imbalance_fractions = c(0.2),
   active_predictors = 10,
   ev_xy_values = c(0.5, 0.2, 0.05),
   ev_xx_values = c(0, 0.1, 0.5, 0.9),
