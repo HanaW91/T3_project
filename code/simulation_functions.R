@@ -64,6 +64,35 @@ default_n_cores <- function(max_cores = 40L) {
   min(max_cores, max(1L, local_cores))
 }
 
+seed_batch_from_env <- function(default_seeds = 1:10) {
+  seed_start_env <- Sys.getenv("SEED_START", "")
+  seed_end_env <- Sys.getenv("SEED_END", "")
+
+  if (!nzchar(seed_start_env) && !nzchar(seed_end_env)) {
+    return(list(seeds = default_seeds, suffix = ""))
+  }
+
+  if (!nzchar(seed_start_env) || !nzchar(seed_end_env)) {
+    stop("Both SEED_START and SEED_END must be set for a seed-batch run.")
+  }
+
+  seed_start <- suppressWarnings(as.integer(seed_start_env))
+  seed_end <- suppressWarnings(as.integer(seed_end_env))
+
+  if (is.na(seed_start) || is.na(seed_end) || seed_start <= 0 || seed_end < seed_start) {
+    stop("Invalid seed batch. Use positive integers with SEED_END >= SEED_START.")
+  }
+
+  list(
+    seeds = seed_start:seed_end,
+    suffix = sprintf("_seed_%03d_%03d", seed_start, seed_end)
+  )
+}
+
+seed_batch_output_prefix <- function(output_prefix, seed_batch) {
+  paste0(output_prefix, seed_batch$suffix)
+}
+
 select_binary_columns <- function(p, binary_fraction = 1.0, seed = 1) {
   set.seed(seed)
   n_binary <- round(p * binary_fraction)

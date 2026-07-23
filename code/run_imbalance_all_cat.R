@@ -2,8 +2,10 @@
 
 source(file.path("code", "simulation_functions.R"))
 
+seed_batch <- seed_batch_from_env(default_seeds = 1:100)
+
 imbalance_run <- run_imbalance_benchmark(
-  seeds = 1:10,
+  seeds = seed_batch$seeds,
   scaling_methods = c("none", "zscore"),
   dimension_scenarios = data.frame(n = 1000, pk = 100),
   binary_fraction_values = c(1),
@@ -20,6 +22,6 @@ imbalance_run <- run_imbalance_benchmark(
 
 write_imbalance_outputs(
   imbalance_run = imbalance_run,
-  output_prefix = "imbalance_all_cat",
+  output_prefix = seed_batch_output_prefix("imbalance_all_cat", seed_batch),
   write_metadata = TRUE
 )
