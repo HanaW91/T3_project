@@ -781,12 +781,17 @@ run_subgroup_plots <- function() {
 
       group_rows <- lapply(split(data, split_keys), function(piece) {
         metric_values <- piece[[metric_column]]
+        selected_count_column <- subgroup_metric_column(group_id, "selected_n")
         absent_rare_binary_baseline <- group_id == "rare_binary" &&
           piece$binary_top_fraction[1] == 0.5 &&
           piece$pk_imbalance_fraction[1] == 0
 
         if (absent_rare_binary_baseline) {
           metric_values <- rep(NA_real_, length(metric_values))
+        }
+
+        if (metric == "precision" && selected_count_column %in% names(piece)) {
+          metric_values[piece[[selected_count_column]] == 0] <- NA_real_
         }
 
         stats <- mean_ci(metric_values)
