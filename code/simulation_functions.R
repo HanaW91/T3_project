@@ -220,6 +220,16 @@ selection_metrics <- function(selected,
                               active,
                               p,
                               na_when_no_active = FALSE) {
+  if (p == 0) {
+    return(data.frame(
+      selected_n = 0,
+      active_n = 0,
+      recall = NA_real_,
+      precision = NA_real_,
+      f1_score = NA_real_
+    ))
+  }
+
   selected <- sort(unique(selected))
   active <- sort(unique(active))
   tp <- length(intersect(selected, active))

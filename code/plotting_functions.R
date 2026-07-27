@@ -780,7 +780,16 @@ run_subgroup_plots <- function() {
       )
 
       group_rows <- lapply(split(data, split_keys), function(piece) {
-        stats <- mean_ci(piece[[metric_column]])
+        metric_values <- piece[[metric_column]]
+        absent_rare_binary_baseline <- group_id == "rare_binary" &&
+          piece$binary_top_fraction[1] == 0.5 &&
+          piece$pk_imbalance_fraction[1] == 0
+
+        if (absent_rare_binary_baseline) {
+          metric_values <- rep(NA_real_, length(metric_values))
+        }
+
+        stats <- mean_ci(metric_values)
 
         data.frame(
           algorithm = piece$algorithm[1],
@@ -904,6 +913,18 @@ run_subgroup_plots <- function() {
           }
 
           line_data <- line_data[order(line_data$rarity_x), ]
+          ribbon_data <- line_data[
+            is.finite(line_data$ci_low) &
+              is.finite(line_data$ci_high),
+            ,
+            drop = FALSE
+          ]
+          point_data <- line_data[is.finite(line_data$mean), , drop = FALSE]
+
+          if (nrow(point_data) == 0) {
+            next
+          }
+
           line_type <- algorithm_line_types[algorithm]
           line_colour <- subgroup_scaling_colour(
             subgroup_spec = subgroup_spec,
@@ -911,24 +932,26 @@ run_subgroup_plots <- function() {
             scaling_method = scaling_method
           )
 
-          graphics::polygon(
-            x = c(line_data$rarity_x, rev(line_data$rarity_x)),
-            y = c(line_data$ci_low, rev(line_data$ci_high)),
-            col = grDevices::adjustcolor(line_colour, alpha.f = 0.06),
-            border = NA
-          )
+          if (nrow(ribbon_data) >= 2) {
+            graphics::polygon(
+              x = c(ribbon_data$rarity_x, rev(ribbon_data$rarity_x)),
+              y = c(ribbon_data$ci_low, rev(ribbon_data$ci_high)),
+              col = grDevices::adjustcolor(line_colour, alpha.f = 0.06),
+              border = NA
+            )
+          }
 
           graphics::lines(
-            line_data$rarity_x,
-            line_data$mean,
+            point_data$rarity_x,
+            point_data$mean,
             col = line_colour,
             lty = line_type,
             lwd = 2.6
           )
 
           graphics::points(
-            line_data$rarity_x,
-            line_data$mean,
+            point_data$rarity_x,
+            point_data$mean,
             col = line_colour,
             pch = scaling_symbols[scaling_method],
             cex = 1.00
