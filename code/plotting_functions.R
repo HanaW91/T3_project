@@ -1156,7 +1156,17 @@ run_subgroup_plots <- function() {
       y = 0.86,
       title = "Scaling",
       legend = scaling_labels[scaling_methods_to_plot],
-      col = "grey20",
+      col = vapply(
+        scaling_methods_to_plot,
+        function(scaling_method) {
+          subgroup_scaling_colour(
+            subgroup_spec = subgroup_spec,
+            group_index = 1,
+            scaling_method = scaling_method
+          )
+        },
+        character(1)
+      ),
       pch = scaling_symbols[scaling_methods_to_plot],
       lty = 1,
       lwd = 3.0,
