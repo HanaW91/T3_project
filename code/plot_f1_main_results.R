@@ -309,7 +309,7 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
 
   grDevices::png(
     filename = output_file,
-    width = 3200,
+    width = 3600,
     height = 2600,
     res = 220,
     pointsize = 14
@@ -333,7 +333,7 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
 
   for (corr_index in seq_along(ev_xx_rows_to_plot)) {
     for (noise_index in seq_along(ev_xy_cols_to_plot)) {
-      graphics::par(mar = c(4.1, 5.8, 2.7, 1.0))
+      graphics::par(mar = c(4.1, 5.8, 2.7, 2.0))
 
       plot_f1_panel(
         plot_data = plot_data,
