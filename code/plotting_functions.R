@@ -790,10 +790,6 @@ run_subgroup_plots <- function() {
           metric_values <- rep(NA_real_, length(metric_values))
         }
 
-        if (metric == "precision" && selected_count_column %in% names(piece)) {
-          metric_values[piece[[selected_count_column]] == 0] <- NA_real_
-        }
-
         stats <- mean_ci(metric_values)
 
         data.frame(
