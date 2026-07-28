@@ -676,6 +676,19 @@ run_subgroup_plots <- function() {
         colour_2sd = c("#006D4F", "#984EA3"),
         stringsAsFactors = FALSE
       )
+    ),
+    list(
+      id = "rare_nonrare_continuous",
+      label = "Rare binary vs non-rare binary vs continuous predictors",
+      groups = data.frame(
+        group = c("rare_binary", "nonrare_binary", "continuous"),
+        label = c("Rare binary", "Non-rare binary", "Continuous"),
+        colour_none = c("#D55E00", "#0072B2", "#CC79A7"),
+        colour_cont = c("#D55E00", "#0072B2", "#CC79A7"),
+        colour_zscore = c("#E69F00", "#56B4E9", "#F781BF"),
+        colour_2sd = c("#A65E00", "#004C8C", "#984EA3"),
+        stringsAsFactors = FALSE
+      )
     )
   )
 
@@ -1196,7 +1209,8 @@ run_subgroup_plots <- function() {
     }
 
     for (subgroup_spec in subgroup_specs) {
-      if (subgroup_spec$id == "binary_vs_continuous" && result_set$binary_fraction == 1) {
+      includes_continuous <- "continuous" %in% subgroup_spec$groups$group
+      if (includes_continuous && result_set$binary_fraction == 1) {
         next
       }
 
