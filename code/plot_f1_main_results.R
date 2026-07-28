@@ -1,4 +1,4 @@
-# Main-result F1 plots for Research Question 1.
+# Main-result F1 plots for Research Questions 1 and 2.
 #
 # This script keeps the main Results figures simpler than the full metric grids:
 #   rows    = predictor correlation
@@ -13,13 +13,29 @@ result_sets <- list(
     id = "all_cat",
     label = "All categorical predictors",
     file = file.path("results", "imbalance_all_cat_results.csv"),
-    binary_fraction = 1
+    binary_fraction = 1,
+    scaling_methods = c("none", "zscore")
+  ),
+  list(
+    id = "mixed",
+    label = "Mixed predictors",
+    file = file.path("results", "imbalance_mixed_results.csv"),
+    binary_fraction = 0.5,
+    scaling_methods = c("cont", "zscore", "2sd")
   ),
   list(
     id = "highdim_all_cat",
     label = "High-dimensional all categorical predictors",
     file = file.path("results", "imbalance_highdim_all_cat_results.csv"),
-    binary_fraction = 1
+    binary_fraction = 1,
+    scaling_methods = c("none", "zscore")
+  ),
+  list(
+    id = "highdim_mixed",
+    label = "High-dimensional mixed predictors",
+    file = file.path("results", "imbalance_highdim_mixed_results.csv"),
+    binary_fraction = 0.5,
+    scaling_methods = c("cont", "zscore", "2sd")
   )
 )
 
@@ -68,16 +84,18 @@ ev_xx_rows <- c(
   `High corr (evxx = 0.9)` = 0.9
 )
 
-scaling_methods_to_plot <- c("none", "zscore")
-
 scaling_labels <- c(
+  cont = "Continuous only",
   none = "No scaling",
-  zscore = "Z-score"
+  zscore = "Z-score",
+  `2sd` = "2 SD"
 )
 
 scaling_symbols <- c(
+  cont = 16,
   none = 16,
-  zscore = 17
+  zscore = 17,
+  `2sd` = 15
 )
 
 algorithm_labels <- c(
@@ -88,14 +106,22 @@ algorithm_labels <- c(
 )
 
 line_colours <- c(
+  cv_lasso_min__cont = "#1f77b4",
   cv_lasso_min__none = "#1f77b4",
   cv_lasso_min__zscore = "#17becf",
+  cv_lasso_min__2sd = "#9467bd",
+  cv_lasso_1se__cont = "#ff7f0e",
   cv_lasso_1se__none = "#ff7f0e",
   cv_lasso_1se__zscore = "#bcbd22",
+  cv_lasso_1se__2sd = "#d62728",
+  ncat_null__cont = "#2ca02c",
   ncat_null__none = "#2ca02c",
   ncat_null__zscore = "#20a386",
+  ncat_null__2sd = "#8dd3c7",
+  ncat_3__cont = "#CC79A7",
   ncat_3__none = "#CC79A7",
-  ncat_3__zscore = "#D65F9E"
+  ncat_3__zscore = "#D65F9E",
+  ncat_3__2sd = "#B07AA1"
 )
 
 format_file_value <- function(value) {
@@ -190,6 +216,7 @@ make_rarity_plot_data <- function(data, algorithms, binary_fraction) {
 
 plot_f1_panel <- function(plot_data,
                           algorithms,
+                          scaling_methods,
                           ev_xy,
                           ev_xx,
                           row_label,
@@ -223,7 +250,7 @@ plot_f1_panel <- function(plot_data,
   graphics::grid(col = "grey90")
 
   for (algorithm in algorithms) {
-    for (scaling_method in scaling_methods_to_plot) {
+    for (scaling_method in scaling_methods) {
       line_data <- panel_data[
         panel_data$algorithm == algorithm &
           panel_data$scaling_method == scaling_method,
@@ -242,6 +269,9 @@ plot_f1_panel <- function(plot_data,
 
       line_key <- paste(algorithm, scaling_method, sep = "__")
       line_colour <- line_colours[line_key]
+      if (is.na(line_colour)) {
+        line_colour <- "grey30"
+      }
 
       if (nrow(line_data) >= 2 && all(is.finite(line_data$ci_low)) && all(is.finite(line_data$ci_high))) {
         graphics::polygon(
@@ -272,13 +302,15 @@ plot_f1_panel <- function(plot_data,
 }
 
 plot_f1_grid <- function(summary_results, result_set, method_spec) {
+  scaling_methods <- result_set$scaling_methods
+
   plot_data <- make_rarity_plot_data(
     data = summary_results,
     algorithms = method_spec$algorithms,
     binary_fraction = result_set$binary_fraction
   )
 
-  plot_data <- plot_data[plot_data$scaling_method %in% scaling_methods_to_plot, ]
+  plot_data <- plot_data[plot_data$scaling_method %in% scaling_methods, ]
 
   if (nrow(plot_data) == 0) {
     warning("No F1 plot data found for ", result_set$id, " / ", method_spec$method_id)
@@ -338,6 +370,7 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
       plot_f1_panel(
         plot_data = plot_data,
         algorithms = method_spec$algorithms,
+        scaling_methods = scaling_methods,
         ev_xy = as.numeric(ev_xy_cols_to_plot[noise_index]),
         ev_xx = as.numeric(ev_xx_rows_to_plot[corr_index]),
         row_label = names(ev_xx_rows_to_plot)[corr_index],
@@ -377,7 +410,7 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
   graphics::plot.new()
   legend_grid <- expand.grid(
     algorithm = method_spec$algorithms,
-    scaling_method = scaling_methods_to_plot,
+    scaling_method = scaling_methods,
     stringsAsFactors = FALSE
   )
   legend_labels <- paste(
