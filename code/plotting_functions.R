@@ -1025,7 +1025,15 @@ run_subgroup_plots <- function() {
       ".png"
     )
     file_name <- gsub("[^A-Za-z0-9_\\.\\-]+", "_", file_name)
-    output_file <- file.path(plot_dir, file_name)
+    output_dir <- if (subgroup_spec$id == "rare_nonrare_continuous") {
+      file.path(plot_dir, "full")
+    } else {
+      plot_dir
+    }
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir, recursive = TRUE)
+    }
+    output_file <- file.path(output_dir, file_name)
 
     grDevices::png(
       filename = output_file,
@@ -1160,30 +1168,51 @@ run_subgroup_plots <- function() {
       title.adj = 0
     )
 
-    graphics::legend(
+    graphics::text(
       x = 0.67,
       y = 0.86,
-      title = "Scaling",
-      legend = scaling_labels[scaling_methods_to_plot],
-      col = vapply(
-        scaling_methods_to_plot,
-        function(scaling_method) {
-          subgroup_scaling_colour(
-            subgroup_spec = subgroup_spec,
-            group_index = 1,
-            scaling_method = scaling_method
-          )
-        },
-        character(1)
-      ),
-      pch = scaling_symbols[scaling_methods_to_plot],
-      lty = 1,
-      lwd = 3.0,
-      bty = "n",
+      labels = "Scaling",
+      adj = c(0, 0.5),
       cex = 1.08,
-      pt.cex = 1.45,
-      title.adj = 0
+      font = 2
     )
+
+    scaling_y <- 0.75
+    for (scaling_method in scaling_methods_to_plot) {
+      for (group_index in seq_len(nrow(subgroup_spec$groups))) {
+        glyph_x <- 0.67 + (group_index - 1) * 0.045
+        glyph_colour <- subgroup_scaling_colour(
+          subgroup_spec = subgroup_spec,
+          group_index = group_index,
+          scaling_method = scaling_method
+        )
+
+        graphics::segments(
+          x0 = glyph_x,
+          y0 = scaling_y,
+          x1 = glyph_x + 0.028,
+          y1 = scaling_y,
+          col = glyph_colour,
+          lwd = 3.0
+        )
+        graphics::points(
+          x = glyph_x + 0.014,
+          y = scaling_y,
+          col = glyph_colour,
+          pch = scaling_symbols[scaling_method],
+          cex = 1.30
+        )
+      }
+
+      graphics::text(
+        x = 0.67 + nrow(subgroup_spec$groups) * 0.045 + 0.02,
+        y = scaling_y,
+        labels = scaling_labels[scaling_method],
+        adj = c(0, 0.5),
+        cex = 1.08
+      )
+      scaling_y <- scaling_y - 0.14
+    }
 
     invisible(output_file)
   }
