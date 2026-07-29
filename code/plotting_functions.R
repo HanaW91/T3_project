@@ -980,7 +980,10 @@ run_subgroup_plots <- function() {
                                  method_spec,
                                  subgroup_spec,
                                  pk_imbalance_fraction,
-                                 ev_xy_block) {
+                                 ev_xy_block,
+                                 metric_specs_to_plot = metric_specs,
+                                 output_dir = NULL,
+                                 file_suffix = "") {
     scaling_methods_to_plot <- scaling_levels_for_binary_fraction(result_set$binary_fraction)
     plot_data <- make_rarity_plot_data(
       data = summary_results,
@@ -1020,15 +1023,18 @@ run_subgroup_plots <- function() {
       "_",
       format_noise_id(names(ev_xy_block)),
       "_noise",
+      file_suffix,
       "_pk_",
       format_file_value(pk_imbalance_fraction),
       ".png"
     )
     file_name <- gsub("[^A-Za-z0-9_\\.\\-]+", "_", file_name)
-    output_dir <- if (subgroup_spec$id == "rare_nonrare_continuous") {
-      file.path(plot_dir, "report", "full")
-    } else {
-      file.path(plot_dir, "report")
+    if (is.null(output_dir)) {
+      output_dir <- if (subgroup_spec$id == "rare_nonrare_continuous") {
+        file.path(plot_dir, "full")
+      } else {
+        plot_dir
+      }
     }
     if (!dir.exists(output_dir)) {
       dir.create(output_dir, recursive = TRUE)
@@ -1049,7 +1055,7 @@ run_subgroup_plots <- function() {
       grDevices::dev.off()
     })
 
-    n_metric <- nrow(metric_specs)
+    n_metric <- nrow(metric_specs_to_plot)
     n_blocks <- length(ev_xy_blocks_to_plot)
     n_corr <- length(ev_xx_rows_to_plot)
     n_panel_rows <- n_blocks * n_corr
@@ -1099,8 +1105,8 @@ run_subgroup_plots <- function() {
             plot_data = plot_data,
             ev_xy = ev_xy_value,
             ev_xx = ev_xx_value,
-            metric = metric_specs$metric[metric_index],
-            metric_label = if (row_index == 1) metric_specs$label[metric_index] else "",
+            metric = metric_specs_to_plot$metric[metric_index],
+            metric_label = if (row_index == 1) metric_specs_to_plot$label[metric_index] else "",
             row_label = names(ev_xx_rows_to_plot)[corr_index],
             show_x_label = row_index == n_panel_rows,
             show_y_label = metric_index == 1,
@@ -1271,20 +1277,47 @@ run_subgroup_plots <- function() {
         next
       }
 
+      subgroup_output_sets <- list(
+        list(
+          metric_specs = metric_specs,
+          output_dir = if (subgroup_spec$id == "rare_nonrare_continuous") {
+            file.path(plot_dir, "full")
+          } else {
+            plot_dir
+          },
+          file_suffix = ""
+        ),
+        list(
+          metric_specs = metric_specs[metric_specs$metric == "f1_score", , drop = FALSE],
+          output_dir = file.path("plots", "main_f1"),
+          file_suffix = "_f1"
+        ),
+        list(
+          metric_specs = metric_specs[metric_specs$metric %in% c("recall", "precision"), , drop = FALSE],
+          output_dir = file.path("plots", "appendix_recall_precision"),
+          file_suffix = "_recall_precision"
+        )
+      )
+
       for (method_spec in method_specs) {
         for (pk_value in pk_imbalance_fractions_to_plot) {
           for (ev_xy_index in seq_along(ev_xy_blocks)) {
-            created_file <- plot_subgroup_grid(
-              summary_results = summary_results,
-              result_set = result_set,
-              method_spec = method_spec,
-              subgroup_spec = subgroup_spec,
-              pk_imbalance_fraction = pk_value,
-              ev_xy_block = ev_xy_blocks[ev_xy_index]
-            )
+            for (output_set in subgroup_output_sets) {
+              created_file <- plot_subgroup_grid(
+                summary_results = summary_results,
+                result_set = result_set,
+                method_spec = method_spec,
+                subgroup_spec = subgroup_spec,
+                pk_imbalance_fraction = pk_value,
+                ev_xy_block = ev_xy_blocks[ev_xy_index],
+                metric_specs_to_plot = output_set$metric_specs,
+                output_dir = output_set$output_dir,
+                file_suffix = output_set$file_suffix
+              )
 
-            if (!is.null(created_file)) {
-              created_files <- c(created_files, created_file)
+              if (!is.null(created_file)) {
+                created_files <- c(created_files, created_file)
+              }
             }
           }
         }

@@ -1,7 +1,7 @@
 # Appendix recall and precision plots for Research Questions 1 and 2.
 #
-# These figures use the same layout as the main F1 plots, but produce recall-only
-# and precision-only panels for the appendix.
+# Output: recall-only and precision-only plots in plots/appendix_recall_precision.
+# These figures use the same layout as the main F1 plots.
 
 result_sets <- list(
   list(
