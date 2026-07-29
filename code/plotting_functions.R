@@ -983,7 +983,10 @@ run_subgroup_plots <- function() {
                                  ev_xy_block,
                                  metric_specs_to_plot = metric_specs,
                                  output_dir = NULL,
-                                 file_suffix = "") {
+                                 file_suffix = "",
+                                 layout_mode = c("metric_columns", "noise_columns"),
+                                 include_noise_in_filename = TRUE) {
+    layout_mode <- match.arg(layout_mode)
     scaling_methods_to_plot <- scaling_levels_for_binary_fraction(result_set$binary_fraction)
     plot_data <- make_rarity_plot_data(
       data = summary_results,
@@ -1014,15 +1017,19 @@ run_subgroup_plots <- function() {
       return(invisible(NULL))
     }
 
+    noise_part <- if (include_noise_in_filename) {
+      paste0("_", format_noise_id(names(ev_xy_block)), "_noise")
+    } else {
+      ""
+    }
+
     file_name <- paste0(
       result_set$id,
       "_",
       method_spec$method_id,
       "_",
       subgroup_spec$id,
-      "_",
-      format_noise_id(names(ev_xy_block)),
-      "_noise",
+      noise_part,
       file_suffix,
       "_pk_",
       format_file_value(pk_imbalance_fraction),
@@ -1058,68 +1065,119 @@ run_subgroup_plots <- function() {
     n_metric <- nrow(metric_specs_to_plot)
     n_blocks <- length(ev_xy_blocks_to_plot)
     n_corr <- length(ev_xx_rows_to_plot)
-    n_panel_rows <- n_blocks * n_corr
 
-    layout_rows <- list()
-    next_figure_id <- 1
-
-    for (block_index in seq_len(n_blocks)) {
-      header_id <- next_figure_id
-      next_figure_id <- next_figure_id + 1
-      layout_rows[[length(layout_rows) + 1]] <- rep(header_id, n_metric)
-
-      for (corr_index in seq_len(n_corr)) {
-        panel_ids <- next_figure_id:(next_figure_id + n_metric - 1)
-        next_figure_id <- next_figure_id + n_metric
-        layout_rows[[length(layout_rows) + 1]] <- panel_ids
-      }
+    if (layout_mode == "noise_columns" && n_metric != 1) {
+      stop("Noise-column subgroup plots must use exactly one metric.")
     }
 
-    legend_id <- next_figure_id
-    layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
-    layout_matrix <- do.call(rbind, layout_rows)
-    row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.58)
+    if (layout_mode == "noise_columns") {
+      layout_rows <- list()
+      next_figure_id <- 1
 
-    graphics::layout(layout_matrix, heights = row_heights)
-    graphics::par(oma = c(0, 0, 7.2, 0))
+      for (corr_index in seq_len(n_corr)) {
+        panel_ids <- next_figure_id:(next_figure_id + n_blocks - 1)
+        next_figure_id <- next_figure_id + n_blocks
+        layout_rows[[length(layout_rows) + 1]] <- panel_ids
+      }
 
-    row_index <- 0
+      legend_id <- next_figure_id
+      layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_blocks)
+      layout_matrix <- do.call(rbind, layout_rows)
+      row_heights <- c(rep(1, n_corr), 0.58)
 
-    for (block_index in seq_along(ev_xy_blocks_to_plot)) {
-      ev_xy_value <- as.numeric(ev_xy_blocks_to_plot[block_index])
-      block_label <- names(ev_xy_blocks_to_plot)[block_index]
-
-      graphics::par(mar = c(0, 0, 0, 0))
-      graphics::plot.new()
-      graphics::rect(0.01, 0.08, 0.99, 0.92, border = "grey70", lwd = 1.2)
-      graphics::text(0.5, 0.5, labels = block_label, cex = 2.15, font = 2)
+      graphics::layout(layout_matrix, heights = row_heights)
+      graphics::par(oma = c(0, 0, 6.0, 0))
 
       for (corr_index in seq_along(ev_xx_rows_to_plot)) {
         ev_xx_value <- as.numeric(ev_xx_rows_to_plot[corr_index])
-        row_index <- row_index + 1
 
-        for (metric_index in seq_len(n_metric)) {
+        for (block_index in seq_along(ev_xy_blocks_to_plot)) {
+          ev_xy_value <- as.numeric(ev_xy_blocks_to_plot[block_index])
+
           graphics::par(mar = c(4.0, 6.0, 2.4, 1.0))
 
           plot_subgroup_panel(
             plot_data = plot_data,
             ev_xy = ev_xy_value,
             ev_xx = ev_xx_value,
-            metric = metric_specs_to_plot$metric[metric_index],
-            metric_label = if (row_index == 1) metric_specs_to_plot$label[metric_index] else "",
+            metric = metric_specs_to_plot$metric[1],
+            metric_label = if (corr_index == 1) names(ev_xy_blocks_to_plot)[block_index] else "",
             row_label = names(ev_xx_rows_to_plot)[corr_index],
-            show_x_label = row_index == n_panel_rows,
-            show_y_label = metric_index == 1,
+            show_x_label = corr_index == n_corr,
+            show_y_label = block_index == 1,
             subgroup_spec = subgroup_spec,
             algorithms = method_spec$algorithms,
             scaling_methods_to_plot = scaling_methods_to_plot
           )
         }
       }
+    } else {
+      n_panel_rows <- n_blocks * n_corr
+      layout_rows <- list()
+      next_figure_id <- 1
+
+      for (block_index in seq_len(n_blocks)) {
+        header_id <- next_figure_id
+        next_figure_id <- next_figure_id + 1
+        layout_rows[[length(layout_rows) + 1]] <- rep(header_id, n_metric)
+
+        for (corr_index in seq_len(n_corr)) {
+          panel_ids <- next_figure_id:(next_figure_id + n_metric - 1)
+          next_figure_id <- next_figure_id + n_metric
+          layout_rows[[length(layout_rows) + 1]] <- panel_ids
+        }
+      }
+
+      legend_id <- next_figure_id
+      layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
+      layout_matrix <- do.call(rbind, layout_rows)
+      row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.58)
+
+      graphics::layout(layout_matrix, heights = row_heights)
+      graphics::par(oma = c(0, 0, 7.2, 0))
+
+      row_index <- 0
+
+      for (block_index in seq_along(ev_xy_blocks_to_plot)) {
+        ev_xy_value <- as.numeric(ev_xy_blocks_to_plot[block_index])
+        block_label <- names(ev_xy_blocks_to_plot)[block_index]
+
+        graphics::par(mar = c(0, 0, 0, 0))
+        graphics::plot.new()
+        graphics::rect(0.01, 0.08, 0.99, 0.92, border = "grey70", lwd = 1.2)
+        graphics::text(0.5, 0.5, labels = block_label, cex = 2.15, font = 2)
+
+        for (corr_index in seq_along(ev_xx_rows_to_plot)) {
+          ev_xx_value <- as.numeric(ev_xx_rows_to_plot[corr_index])
+          row_index <- row_index + 1
+
+          for (metric_index in seq_len(n_metric)) {
+            graphics::par(mar = c(4.0, 6.0, 2.4, 1.0))
+
+            plot_subgroup_panel(
+              plot_data = plot_data,
+              ev_xy = ev_xy_value,
+              ev_xx = ev_xx_value,
+              metric = metric_specs_to_plot$metric[metric_index],
+              metric_label = if (row_index == 1) metric_specs_to_plot$label[metric_index] else "",
+              row_label = names(ev_xx_rows_to_plot)[corr_index],
+              show_x_label = row_index == n_panel_rows,
+              show_y_label = metric_index == 1,
+              subgroup_spec = subgroup_spec,
+              algorithms = method_spec$algorithms,
+              scaling_methods_to_plot = scaling_methods_to_plot
+            )
+          }
+        }
+      }
     }
 
     graphics::mtext(
-      paste0(subgroup_spec$label, " in ", method_spec$method_label),
+      if (layout_mode == "noise_columns") {
+        paste0(subgroup_spec$label, " F1 in ", method_spec$method_label)
+      } else {
+        paste0(subgroup_spec$label, " in ", method_spec$method_label)
+      },
       outer = TRUE,
       side = 3,
       line = 5.4,
@@ -1285,24 +1343,51 @@ run_subgroup_plots <- function() {
           } else {
             plot_dir
           },
-          file_suffix = ""
+          file_suffix = "",
+          combine_noise = FALSE,
+          layout_mode = "metric_columns"
         ),
         list(
           metric_specs = metric_specs[metric_specs$metric == "f1_score", , drop = FALSE],
           output_dir = file.path("plots", "main_f1"),
-          file_suffix = "_f1"
+          file_suffix = "_f1",
+          combine_noise = TRUE,
+          layout_mode = "noise_columns"
         ),
         list(
           metric_specs = metric_specs[metric_specs$metric %in% c("recall", "precision"), , drop = FALSE],
           output_dir = file.path("plots", "appendix_recall_precision"),
-          file_suffix = "_recall_precision"
+          file_suffix = "_recall_precision",
+          combine_noise = FALSE,
+          layout_mode = "metric_columns"
         )
       )
 
       for (method_spec in method_specs) {
         for (pk_value in pk_imbalance_fractions_to_plot) {
-          for (ev_xy_index in seq_along(ev_xy_blocks)) {
-            for (output_set in subgroup_output_sets) {
+          for (output_set in subgroup_output_sets) {
+            if (output_set$combine_noise) {
+              created_file <- plot_subgroup_grid(
+                summary_results = summary_results,
+                result_set = result_set,
+                method_spec = method_spec,
+                subgroup_spec = subgroup_spec,
+                pk_imbalance_fraction = pk_value,
+                ev_xy_block = ev_xy_blocks,
+                metric_specs_to_plot = output_set$metric_specs,
+                output_dir = output_set$output_dir,
+                file_suffix = output_set$file_suffix,
+                layout_mode = output_set$layout_mode,
+                include_noise_in_filename = FALSE
+              )
+
+              if (!is.null(created_file)) {
+                created_files <- c(created_files, created_file)
+              }
+              next
+            }
+
+            for (ev_xy_index in seq_along(ev_xy_blocks)) {
               created_file <- plot_subgroup_grid(
                 summary_results = summary_results,
                 result_set = result_set,
@@ -1312,7 +1397,8 @@ run_subgroup_plots <- function() {
                 ev_xy_block = ev_xy_blocks[ev_xy_index],
                 metric_specs_to_plot = output_set$metric_specs,
                 output_dir = output_set$output_dir,
-                file_suffix = output_set$file_suffix
+                file_suffix = output_set$file_suffix,
+                layout_mode = output_set$layout_mode
               )
 
               if (!is.null(created_file)) {
