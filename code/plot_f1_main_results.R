@@ -341,8 +341,8 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
 
   grDevices::png(
     filename = output_file,
-    width = 3600,
-    height = 2600,
+    width = 3000,
+    height = 3400,
     res = 220,
     pointsize = 14
   )

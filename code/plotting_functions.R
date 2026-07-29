@@ -1026,9 +1026,9 @@ run_subgroup_plots <- function() {
     )
     file_name <- gsub("[^A-Za-z0-9_\\.\\-]+", "_", file_name)
     output_dir <- if (subgroup_spec$id == "rare_nonrare_continuous") {
-      file.path(plot_dir, "full")
+      file.path(plot_dir, "report", "full")
     } else {
-      plot_dir
+      file.path(plot_dir, "report")
     }
     if (!dir.exists(output_dir)) {
       dir.create(output_dir, recursive = TRUE)
