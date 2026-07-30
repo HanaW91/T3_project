@@ -345,9 +345,6 @@ run_metric_plots <- function() {
     if (is.null(file_name)) {
       file_name <- paste0(
         method_id,
-        "_pk_",
-        format_file_value(pk_imbalance_fraction_to_plot),
-        "_",
         format_noise_id(names(ev_xy_block)),
         ".png"
       )
@@ -555,8 +552,7 @@ run_metric_plots <- function() {
                   method_spec$method_id,
                   "_",
                   format_noise_id(names(ev_xy_block)),
-                  "_noise_pk_",
-                  format_file_value(pk_imbalance_fraction_to_plot),
+                  "_noise",
                   ".png"
                 )
               )
@@ -1031,8 +1027,6 @@ run_subgroup_plots <- function() {
       subgroup_spec$id,
       noise_part,
       file_suffix,
-      "_pk_",
-      format_file_value(pk_imbalance_fraction),
       ".png"
     )
     file_name <- gsub("[^A-Za-z0-9_\\.\\-]+", "_", file_name)
@@ -1302,6 +1296,15 @@ run_subgroup_plots <- function() {
     }
 
     for (subgroup_spec in subgroup_specs) {
+      # For mixed datasets, use the combined rare/non-rare/continuous subgroup plot only.
+      # The separate rare-vs-nonrare and binary-vs-continuous plots are less useful here.
+      if (
+        result_set$binary_fraction < 1 &&
+          subgroup_spec$id %in% c("rare_vs_nonrare", "binary_vs_continuous")
+      ) {
+        next
+      }
+
       includes_continuous <- "continuous" %in% subgroup_spec$groups$group
       if (includes_continuous && result_set$binary_fraction == 1) {
         next

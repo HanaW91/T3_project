@@ -336,8 +336,7 @@ plot_metric_grid <- function(summary_results, result_set, method_spec, metric_sp
       method_spec$method_id,
       "_",
       metric_spec$metric,
-      "_appendix_pk_",
-      format_file_value(pk_imbalance_fraction_to_plot),
+      "_appendix",
       ".png"
     )
   )

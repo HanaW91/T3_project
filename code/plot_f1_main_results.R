@@ -334,8 +334,7 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
       result_set$id,
       "_",
       method_spec$method_id,
-      "_f1_main_pk_",
-      format_file_value(pk_imbalance_fraction_to_plot),
+      "_f1_main",
       ".png"
     )
   )
