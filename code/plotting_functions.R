@@ -1054,7 +1054,7 @@ run_subgroup_plots <- function() {
 
     grDevices::png(
       filename = output_file,
-      width = 3000,
+      width = 3400,
       height = 3600,
       res = 220,
       pointsize = 14
@@ -1090,7 +1090,7 @@ run_subgroup_plots <- function() {
       row_heights <- c(rep(1, n_corr), 0.58)
 
       graphics::layout(layout_matrix, heights = row_heights)
-      graphics::par(oma = c(0, 0, 6.0, 0))
+      graphics::par(oma = c(0, 0, 6.6, 1.4))
 
       for (corr_index in seq_along(ev_xx_rows_to_plot)) {
         ev_xx_value <- as.numeric(ev_xx_rows_to_plot[corr_index])
@@ -1098,7 +1098,7 @@ run_subgroup_plots <- function() {
         for (block_index in seq_along(ev_xy_blocks_to_plot)) {
           ev_xy_value <- as.numeric(ev_xy_blocks_to_plot[block_index])
 
-          graphics::par(mar = c(4.0, 6.0, 2.4, 1.0))
+          graphics::par(mar = c(4.0, 6.0, 2.4, 1.8))
 
           plot_subgroup_panel(
             plot_data = plot_data,
@@ -1138,7 +1138,7 @@ run_subgroup_plots <- function() {
       row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.58)
 
       graphics::layout(layout_matrix, heights = row_heights)
-      graphics::par(oma = c(0, 0, 7.2, 0))
+      graphics::par(oma = c(0, 0, 8.0, 1.4))
 
       row_index <- 0
 
@@ -1156,7 +1156,7 @@ run_subgroup_plots <- function() {
           row_index <- row_index + 1
 
           for (metric_index in seq_len(n_metric)) {
-            graphics::par(mar = c(4.0, 6.0, 2.4, 1.0))
+            graphics::par(mar = c(4.0, 6.0, 2.4, 1.8))
 
             plot_subgroup_panel(
               plot_data = plot_data,
@@ -1184,8 +1184,8 @@ run_subgroup_plots <- function() {
       },
       outer = TRUE,
       side = 3,
-      line = 5.4,
-      cex = 1.52,
+      line = 5.6,
+      cex = 1.38,
       font = 2
     )
 
@@ -1212,8 +1212,8 @@ run_subgroup_plots <- function() {
       ),
       outer = TRUE,
       side = 3,
-      line = 3.5,
-      cex = 1.00
+      line = 3.7,
+      cex = 0.94
     )
 
     graphics::par(mar = c(0, 0, 0, 0))
@@ -1253,7 +1253,7 @@ run_subgroup_plots <- function() {
 
     graphics::text(
       x = scaling_legend_x,
-      y = 0.86,
+      y = 0.82,
       labels = "Scaling",
       adj = c(0, 0.5),
       cex = 1.08
