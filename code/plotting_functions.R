@@ -697,6 +697,12 @@ run_subgroup_plots <- function() {
     ncat_null = "n_cat=NULL",
     ncat_3 = "n_cat=3"
   )
+  algorithm_file_ids <- c(
+    cv_lasso_min = "lambda_min",
+    cv_lasso_1se = "lambda_1se",
+    ncat_null = "ncat_null",
+    ncat_3 = "ncat_3"
+  )
   algorithm_line_types <- c(
     cv_lasso_min = 1,
     cv_lasso_1se = 2,
@@ -935,7 +941,11 @@ run_subgroup_plots <- function() {
             next
           }
 
-          line_type <- algorithm_line_types[algorithm]
+          line_type <- if (length(algorithms) == 1) {
+            1
+          } else {
+            algorithm_line_types[algorithm]
+          }
           line_colour <- subgroup_scaling_colour(
             subgroup_spec = subgroup_spec,
             group_index = group_index,
@@ -1181,9 +1191,19 @@ run_subgroup_plots <- function() {
 
     graphics::mtext(
       paste0(
-        "Algorithms: ",
-        paste(algorithm_labels[method_spec$algorithms], collapse = " and "),
-        "; colour = subgroup, line style = algorithm, point = scaling",
+        if (length(method_spec$algorithms) == 1) {
+          paste0("Algorithm: ", algorithm_labels[method_spec$algorithms])
+        } else {
+          paste0(
+            "Algorithms: ",
+            paste(algorithm_labels[method_spec$algorithms], collapse = " and ")
+          )
+        },
+        if (length(method_spec$algorithms) == 1) {
+          "; colour = subgroup, point = scaling"
+        } else {
+          "; colour = subgroup, line style = algorithm, point = scaling"
+        },
         "; dataset = ",
         result_set$label,
         "; pk imbalance = ",
@@ -1213,32 +1233,36 @@ run_subgroup_plots <- function() {
       title.adj = 0
     )
 
-    graphics::legend(
-      x = 0.37,
-      y = 0.86,
-      title = "Algorithm",
-      legend = algorithm_labels[method_spec$algorithms],
-      col = "grey20",
-      lty = algorithm_line_types[method_spec$algorithms],
-      lwd = 3.0,
-      bty = "n",
-      cex = 1.08,
-      title.adj = 0
-    )
+    show_algorithm_legend <- length(method_spec$algorithms) > 1
+    scaling_legend_x <- if (show_algorithm_legend) 0.67 else 0.42
+
+    if (show_algorithm_legend) {
+      graphics::legend(
+        x = 0.37,
+        y = 0.86,
+        title = "Algorithm",
+        legend = algorithm_labels[method_spec$algorithms],
+        col = "grey20",
+        lty = algorithm_line_types[method_spec$algorithms],
+        lwd = 3.0,
+        bty = "n",
+        cex = 1.08,
+        title.adj = 0
+      )
+    }
 
     graphics::text(
-      x = 0.67,
+      x = scaling_legend_x,
       y = 0.86,
       labels = "Scaling",
       adj = c(0, 0.5),
-      cex = 1.08,
-      font = 2
+      cex = 1.08
     )
 
     scaling_y <- 0.75
     for (scaling_method in scaling_methods_to_plot) {
       for (group_index in seq_len(nrow(subgroup_spec$groups))) {
-        glyph_x <- 0.67 + (group_index - 1) * 0.045
+        glyph_x <- scaling_legend_x + (group_index - 1) * 0.045
         glyph_colour <- subgroup_scaling_colour(
           subgroup_spec = subgroup_spec,
           group_index = group_index,
@@ -1263,7 +1287,7 @@ run_subgroup_plots <- function() {
       }
 
       graphics::text(
-        x = 0.67 + nrow(subgroup_spec$groups) * 0.045 + 0.02,
+        x = scaling_legend_x + nrow(subgroup_spec$groups) * 0.045 + 0.02,
         y = scaling_y,
         labels = scaling_labels[scaling_method],
         adj = c(0, 0.5),
@@ -1385,45 +1409,65 @@ run_subgroup_plots <- function() {
       )
 
       for (method_spec in method_specs) {
+        method_algorithm_specs <- lapply(method_spec$algorithms, function(algorithm) {
+          single_method_spec <- method_spec
+          single_method_spec$algorithms <- algorithm
+          single_method_spec$method_id <- paste(
+            method_spec$method_id,
+            algorithm_file_ids[algorithm],
+            sep = "_"
+          )
+          single_method_spec$method_label <- paste(
+            method_spec$method_label,
+            algorithm_labels[algorithm],
+            sep = " - "
+          )
+          single_method_spec
+        })
+
+        names(method_algorithm_specs) <- method_spec$algorithms
+
         for (pk_value in pk_imbalance_fractions_to_plot) {
-          for (output_set in subgroup_output_sets) {
-            if (output_set$combine_noise) {
-              created_file <- plot_subgroup_grid(
-                summary_results = summary_results,
-                result_set = result_set,
-                method_spec = method_spec,
-                subgroup_spec = subgroup_spec,
-                pk_imbalance_fraction = pk_value,
-                ev_xy_block = ev_xy_blocks,
-                metric_specs_to_plot = output_set$metric_specs,
-                output_dir = output_set$output_dir,
-                file_suffix = output_set$file_suffix,
-                layout_mode = output_set$layout_mode,
-                include_noise_in_filename = FALSE
-              )
+          for (single_method_spec in method_algorithm_specs) {
+            for (output_set in subgroup_output_sets) {
+              if (output_set$combine_noise) {
+                created_file <- plot_subgroup_grid(
+                  summary_results = summary_results,
+                  result_set = result_set,
+                  method_spec = single_method_spec,
+                  subgroup_spec = subgroup_spec,
+                  pk_imbalance_fraction = pk_value,
+                  ev_xy_block = ev_xy_blocks,
+                  metric_specs_to_plot = output_set$metric_specs,
+                  output_dir = output_set$output_dir,
+                  file_suffix = output_set$file_suffix,
+                  layout_mode = output_set$layout_mode,
+                  include_noise_in_filename = FALSE
+                )
 
-              if (!is.null(created_file)) {
-                created_files <- c(created_files, created_file)
+                if (!is.null(created_file)) {
+                  created_files <- c(created_files, created_file)
+                }
+                next
               }
-              next
-            }
 
-            for (ev_xy_index in seq_along(ev_xy_blocks)) {
-              created_file <- plot_subgroup_grid(
-                summary_results = summary_results,
-                result_set = result_set,
-                method_spec = method_spec,
-                subgroup_spec = subgroup_spec,
-                pk_imbalance_fraction = pk_value,
-                ev_xy_block = ev_xy_blocks[ev_xy_index],
-                metric_specs_to_plot = output_set$metric_specs,
-                output_dir = output_set$output_dir,
-                file_suffix = output_set$file_suffix,
-                layout_mode = output_set$layout_mode
-              )
+              for (ev_xy_index in seq_along(ev_xy_blocks)) {
+                created_file <- plot_subgroup_grid(
+                  summary_results = summary_results,
+                  result_set = result_set,
+                  method_spec = single_method_spec,
+                  subgroup_spec = subgroup_spec,
+                  pk_imbalance_fraction = pk_value,
+                  ev_xy_block = ev_xy_blocks[ev_xy_index],
+                  metric_specs_to_plot = output_set$metric_specs,
+                  output_dir = output_set$output_dir,
+                  file_suffix = output_set$file_suffix,
+                  layout_mode = output_set$layout_mode
+                )
 
-              if (!is.null(created_file)) {
-                created_files <- c(created_files, created_file)
+                if (!is.null(created_file)) {
+                  created_files <- c(created_files, created_file)
+                }
               }
             }
           }
