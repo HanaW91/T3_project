@@ -1,6 +1,6 @@
 # Appendix recall and precision plots for Research Questions 1 and 2.
 #
-# Output: recall-only and precision-only plots in plots/appendix_recall_precision.
+# Output: recall-only and precision-only plots in plots/appendix/recall_precision.
 # These figures use the same layout as the main F1 plots.
 
 result_sets <- list(
@@ -61,7 +61,7 @@ required_columns <- c(
   "precision"
 )
 
-plot_dir <- file.path("plots", "appendix_recall_precision")
+plot_dir <- file.path("plots", "appendix", "recall_precision")
 if (!dir.exists(plot_dir)) {
   dir.create(plot_dir, recursive = TRUE)
 }

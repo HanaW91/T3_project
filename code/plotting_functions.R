@@ -1338,28 +1338,46 @@ run_subgroup_plots <- function() {
         next
       }
 
+      is_highdim_result <- startsWith(result_set$id, "highdim_")
+      is_full_three_group <- subgroup_spec$id == "rare_nonrare_continuous"
+      is_all_cat_subgroup <- subgroup_spec$id == "rare_vs_nonrare" &&
+        result_set$binary_fraction == 1 &&
+        !is_highdim_result
+
+      full_subgroup_dir <- if (is_highdim_result) {
+        file.path("plots", "appendix", "highdim")
+      } else if (is_full_three_group || is_all_cat_subgroup) {
+        file.path("plots", "main", "subgroup")
+      } else {
+        file.path("plots", "appendix", "subgroup")
+      }
+
       subgroup_output_sets <- list(
         list(
           metric_specs = metric_specs,
-          output_dir = if (subgroup_spec$id == "rare_nonrare_continuous") {
-            file.path(plot_dir, "full")
-          } else {
-            plot_dir
-          },
+          output_dir = full_subgroup_dir,
           file_suffix = "",
           combine_noise = FALSE,
           layout_mode = "metric_columns"
         ),
         list(
           metric_specs = metric_specs[metric_specs$metric == "f1_score", , drop = FALSE],
-          output_dir = file.path("plots", "main_f1"),
+          output_dir = if (is_highdim_result) {
+            file.path("plots", "appendix", "highdim")
+          } else {
+            file.path("plots", "appendix", "subgroup_f1")
+          },
           file_suffix = "_f1",
           combine_noise = TRUE,
           layout_mode = "noise_columns"
         ),
         list(
           metric_specs = metric_specs[metric_specs$metric %in% c("recall", "precision"), , drop = FALSE],
-          output_dir = file.path("plots", "appendix_recall_precision"),
+          output_dir = if (is_highdim_result) {
+            file.path("plots", "appendix", "highdim")
+          } else {
+            file.path("plots", "appendix", "subgroup_recall_precision")
+          },
           file_suffix = "_recall_precision",
           combine_noise = FALSE,
           layout_mode = "metric_columns"
