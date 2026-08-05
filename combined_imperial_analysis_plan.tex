@@ -1,0 +1,213 @@
+\documentclass[12pt,a4paper,twoside]{report}
+
+\usepackage[margin=2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage[numbers,round,sort&compress]{natbib}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+
+\onehalfspacing
+
+\hypersetup{
+    colorlinks=false,
+    pdfborder={0 0 0}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[LO]{\slshape \rightmark}
+\fancyhead[RE]{\slshape \leftmark}
+
+\newcommand{\reporttitle}{Investigating the Impact of Category Prevalence and Variance Scaling on LASSO Variable Selection}
+\newcommand{\reportauthor}{Hana Wang}
+\newcommand{\cid}{Add CID here}
+\newcommand{\degreetype}{Health Data Analytics and Machine Learning}
+\newcommand{\submissiondate}{July 2026}
+\newcommand{\wordcount}{Add word count here}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+
+    {\Large IMPERIAL COLLEGE LONDON\par}
+    \vspace{0.5cm}
+    {\Large SCHOOL OF PUBLIC HEALTH\par}
+
+    \vspace{3cm}
+
+    {\LARGE\bfseries Investigating the Impact of Category Prevalence\par}
+    \vspace{0.3cm}
+    {\LARGE\bfseries and Variance Scaling on LASSO Variable Selection\par}
+
+    \vspace{2cm}
+
+    {\large \reportauthor\par}
+    \vspace{0.4cm}
+    {\large CID: \cid\par}
+    \vspace{0.4cm}
+    {\large Degree Type: \degreetype\par}
+    \vspace{0.4cm}
+    {\large Date of Submission: \submissiondate\par}
+    \vspace{0.4cm}
+    {\large Word Count: \wordcount\par}
+
+    \vfill
+
+    {\large Submitted in partial fulfilment of the requirements for the MSc degree in Health\par}
+    {\large Data Analytics and Machine Learning of Imperial College London\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+\textbf{Background:} Category prevalence may affect the variance of encoded categorical predictors, which can influence LASSO-based variable selection.
+
+\textbf{Aims/Objectives:} This project investigates whether category rarity and variance scaling affect variable selection performance in standard LASSO and stability-selection LASSO.
+
+\textbf{Methods:} Simulation studies will compare different scaling methods, rarity levels, predictor correlations, and noise settings. Performance will be assessed using F1 score, recall, and precision.
+
+\textbf{Results:} The analysis will examine whether rare categories, scaling choices, correlation, and noise change selection performance, and whether stability selection reduces sensitivity to these factors.
+
+\textbf{Conclusions:} The findings will help clarify how categorical predictor prevalence and scaling should be considered when applying LASSO-based variable selection.
+
+\cleardoublepage
+
+\chapter*{Acknowledgements}
+\addcontentsline{toc}{chapter}{Acknowledgements}
+
+Add acknowledgements here. Remove names from the anonymous assessed copy.
+
+\cleardoublepage
+
+\tableofcontents
+\cleardoublepage
+\listoftables
+\addcontentsline{toc}{chapter}{List of Tables}
+\cleardoublepage
+\listoffigures
+\addcontentsline{toc}{chapter}{List of Figures}
+\cleardoublepage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\chapter{Analysis Plan}
+
+\section{Overall Aim}
+
+\begin{itemize}
+  \item Investigate whether category prevalence and variance scaling affect LASSO-based variable selection.
+  \item Compare standard LASSO and stability-selection LASSO.
+  \item Evaluate performance using F1 score, recall, and precision.
+  \item Compare results across rarity, correlation, and noise settings.
+\end{itemize}
+
+\section{Research Question 1: Fully Categorical Predictors}
+
+\begin{itemize}
+  \item Without scaling, how does category rarity affect variable-selection performance across different scenarios?
+  \item Does z-score scaling improve variable-selection performance relative to no scaling across different scenarios?
+  \item Examine whether scaling and rarity affect selection when all predictors are categorical, represented as binary predictors for simplicity.
+  \item Start from a balanced all-binary baseline, then introduce increasingly rare categories, signal strength variation, and correlation.
+  \item For LASSO, compare $\lambda_{\min}$ and $\lambda_{1se}$.
+  \item For stability-selection LASSO, compare $n_{\mathrm{cat}} = 0$ and $n_{\mathrm{cat}} = 3$.
+  \item Apply two scaling methods: no scaling and z-score scaling.
+\end{itemize}
+
+\section{Research Question 2: Mixed Predictors}
+
+\begin{itemize}
+  \item In datasets containing both binary and continuous predictors, which scaling strategy produces the best variable-selection performance across different scenarios?
+  \item Repeat the main rarity analysis with 50\% binary predictors and 50\% continuous predictors.
+  \item Apply three scaling methods: no scaling, z-score scaling of all predictors, and two-standard-deviation scaling of continuous predictors only.
+\end{itemize}
+
+\section{Simulation Scenarios for Both Research Questions}
+
+\begin{itemize}
+  \item \textbf{Scenario 0 for Research Question 1:} baseline setting with no rare categories. This acts as a sanity check and should be similar regardless of rarity and scaling.
+  \item \textbf{Scenario 1:} increasing rarity under lower-noise conditions, with signal strength around $ev_{xy} = 0.5$.
+  \item \textbf{Scenario 2:} increasing rarity under medium-noise conditions, with weaker signal such as $ev_{xy} = 0.2$ or the closest available simulated value.
+  \item \textbf{Scenario 3:} increasing rarity under higher-noise conditions, with weaker signal such as $ev_{xy} = 0.05$ or the closest available simulated value.
+  \item Vary predictor correlation across no correlation, low correlation, and high correlation settings.
+  \item Repeat all scenarios 100 times to obtain empirical 95\% percentile intervals across simulation seeds.
+\end{itemize}
+
+\section{Main Assessment and Plotting Strategy}
+
+\begin{itemize}
+  \item Produce separate small-multiple figures for LASSO and stability-selection LASSO.
+  \item Use columns for F1 score, recall, and precision.
+  \item Use rows for no correlation, low correlation, and high correlation.
+  \item Divide each figure into lower-, medium-, and higher-noise blocks.
+  \item Use rarity severity on the x-axis within each small plot.
+  \item In the LASSO figure, each panel will contain lines depending on $\lambda$ tuning settings crossed with scaling methods.
+  \item In the stability-selection LASSO figure, each panel will contain lines representing the $n_{\mathrm{cat}}$ settings crossed with the scaling methods.
+  \item Generate plots for overall variable-selection performance and, where relevant, binary-predictor selection, rare-category binary-predictor selection, and continuous-predictor selection.
+\end{itemize}
+
+\chapter{Introduction}
+
+\begin{itemize}
+  \item Introduce LASSO as a commonly used method for variable selection in high-dimensional data.
+  \item Explain that categorical predictors can create challenges because category prevalence affects predictor variance.
+  \item Introduce the concern that rare categories and scaling choices may influence which variables are selected.
+  \item State the main aim: to investigate the impact of category prevalence and variance scaling on LASSO-based variable selection.
+\end{itemize}
+
+\chapter{Methods}
+
+\begin{itemize}
+  \item Describe the simulation design and predictor-generation process.
+  \item Explain how rarity, scaling, correlation, and noise are varied.
+  \item Describe the LASSO and stability-selection LASSO settings.
+  \item Define the performance metrics: F1 score, recall, and precision.
+\end{itemize}
+
+\chapter{Results}
+
+\begin{itemize}
+  \item Present the main LASSO plots across rarity, correlation, and noise settings.
+  \item Present the main stability-selection LASSO plots across the same settings.
+  \item Compare F1 score, recall, and precision across scaling methods.
+  \item Summarise whether performance changes more strongly with rarity, scaling, correlation, or noise.
+  \item Include sensitivity-analysis plots for overall, categorical, and rare-category selection performance.
+\end{itemize}
+
+\chapter{Discussion}
+
+\begin{itemize}
+  \item Interpret whether category prevalence affects variable selection performance.
+  \item Discuss whether scaling improves or worsens selection under rare-category settings.
+  \item Compare the behaviour of standard LASSO and stability-selection LASSO.
+  \item Discuss whether the findings persist in mixed categorical and continuous data.
+  \item Mention limitations of the simulation design and possible extensions.
+\end{itemize}
+
+\chapter{Conclusions}
+
+Summarise the main conclusions of the project here.
+
+\chapter{References}
+
+Add references for LASSO, stability selection, scaling of binary or categorical predictors, and simulation methodology.
+
+% Later, replace the note above with:
+% \bibliographystyle{plainnat}
+% \bibliography{references}
+
+\appendix
+
+\chapter{Supplementary Material}
+
+Add extra simulation details, code snippets, supplementary plots, or larger tables here.
+
+\end{document}

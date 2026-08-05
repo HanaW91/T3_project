@@ -142,13 +142,17 @@ mean_ci <- function(values) {
   }
 
   mean_value <- mean(values)
-  se_value <- if (n_values <= 1) 0 else stats::sd(values) / sqrt(n_values)
-  ci_width <- stats::qt(0.975, df = max(n_values - 1, 1)) * se_value
+  ci_bounds <- stats::quantile(
+    values,
+    probs = c(0.025, 0.975),
+    names = FALSE,
+    type = 7
+  )
 
   c(
     mean = mean_value,
-    ci_low = max(0, mean_value - ci_width),
-    ci_high = min(1, mean_value + ci_width),
+    ci_low = max(0, ci_bounds[1]),
+    ci_high = min(1, ci_bounds[2]),
     n = n_values
   )
 }
@@ -400,7 +404,7 @@ plot_metric_grid <- function(summary_results, result_set, method_spec, metric_sp
       paste(algorithm_labels[method_spec$algorithms], collapse = " and "),
       "; pk imbalance = ",
       pk_imbalance_fraction_to_plot,
-      "; ribbons show 95% CI over seeds"
+      "; ribbons show empirical 95% intervals over seeds"
     ),
     outer = TRUE,
     side = 3,
