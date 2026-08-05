@@ -1415,28 +1415,6 @@ run_subgroup_plots <- function() {
           file_suffix = "",
           combine_noise = FALSE,
           layout_mode = "metric_columns"
-        ),
-        list(
-          metric_specs = metric_specs[metric_specs$metric == "f1_score", , drop = FALSE],
-          output_dir = if (is_highdim_result) {
-            file.path("plots", "appendix", "highdim")
-          } else {
-            file.path("plots", "appendix", "subgroup_f1")
-          },
-          file_suffix = "_f1",
-          combine_noise = TRUE,
-          layout_mode = "noise_columns"
-        ),
-        list(
-          metric_specs = metric_specs[metric_specs$metric %in% c("recall", "precision"), , drop = FALSE],
-          output_dir = if (is_highdim_result) {
-            file.path("plots", "appendix", "highdim")
-          } else {
-            file.path("plots", "appendix", "subgroup_recall_precision")
-          },
-          file_suffix = "_recall_precision",
-          combine_noise = FALSE,
-          layout_mode = "metric_columns"
         )
       )
 
