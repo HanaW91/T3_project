@@ -133,26 +133,26 @@ format_file_value <- function(value) {
   gsub("\\.", "_", format(value, trim = TRUE, scientific = FALSE))
 }
 
-mean_ci <- function(values) {
+median_iqr <- function(values) {
   values <- values[!is.na(values)]
   n_values <- length(values)
 
   if (n_values == 0) {
-    return(c(mean = NA_real_, ci_low = NA_real_, ci_high = NA_real_, n = 0))
+    return(c(median = NA_real_, iqr_low = NA_real_, iqr_high = NA_real_, n = 0))
   }
 
-  mean_value <- mean(values)
-  ci_bounds <- stats::quantile(
+  median_value <- stats::median(values)
+  iqr_bounds <- stats::quantile(
     values,
-    probs = c(0.025, 0.975),
+    probs = c(0.25, 0.75),
     names = FALSE,
     type = 7
   )
 
   c(
-    mean = mean_value,
-    ci_low = max(0, ci_bounds[1]),
-    ci_high = min(1, ci_bounds[2]),
+    median = median_value,
+    iqr_low = max(0, iqr_bounds[1]),
+    iqr_high = min(1, iqr_bounds[2]),
     n = n_values
   )
 }
@@ -170,7 +170,7 @@ summarise_metric <- function(data, metric) {
   )
 
   rows <- lapply(split(data, split_keys), function(piece) {
-    stats <- mean_ci(piece[[metric]])
+    stats <- median_iqr(piece[[metric]])
 
     data.frame(
       algorithm = piece$algorithm[1],
@@ -180,9 +180,9 @@ summarise_metric <- function(data, metric) {
       pk_imbalance_fraction = piece$pk_imbalance_fraction[1],
       ev_xy = piece$ev_xy[1],
       ev_xx = piece$ev_xx[1],
-      mean = stats[["mean"]],
-      ci_low = stats[["ci_low"]],
-      ci_high = stats[["ci_high"]],
+      median = stats[["median"]],
+      iqr_low = stats[["iqr_low"]],
+      iqr_high = stats[["iqr_high"]],
       n = stats[["n"]],
       stringsAsFactors = FALSE
     )
@@ -265,12 +265,12 @@ plot_metric_panel <- function(plot_data,
           panel_data$scaling_method == scaling_method,
       ]
 
-      if (nrow(line_data) == 0 || all(is.na(line_data$mean))) {
+      if (nrow(line_data) == 0 || all(is.na(line_data$median))) {
         next
       }
 
       line_data <- line_data[order(line_data$rarity_x), ]
-      line_data <- line_data[is.finite(line_data$mean), , drop = FALSE]
+      line_data <- line_data[is.finite(line_data$median), , drop = FALSE]
 
       if (nrow(line_data) == 0) {
         next
@@ -279,10 +279,10 @@ plot_metric_panel <- function(plot_data,
       line_key <- paste(algorithm, scaling_method, sep = "__")
       line_colour <- line_colours[line_key]
 
-      if (nrow(line_data) >= 2 && all(is.finite(line_data$ci_low)) && all(is.finite(line_data$ci_high))) {
+      if (nrow(line_data) >= 2 && all(is.finite(line_data$iqr_low)) && all(is.finite(line_data$iqr_high))) {
         graphics::polygon(
           x = c(line_data$rarity_x, rev(line_data$rarity_x)),
-          y = c(line_data$ci_low, rev(line_data$ci_high)),
+          y = c(line_data$iqr_low, rev(line_data$iqr_high)),
           col = grDevices::adjustcolor(line_colour, alpha.f = 0.10),
           border = NA
         )
@@ -290,7 +290,7 @@ plot_metric_panel <- function(plot_data,
 
       graphics::lines(
         line_data$rarity_x,
-        line_data$mean,
+        line_data$median,
         col = line_colour,
         lty = 1,
         lwd = 2.7
@@ -298,7 +298,7 @@ plot_metric_panel <- function(plot_data,
 
       graphics::points(
         line_data$rarity_x,
-        line_data$mean,
+        line_data$median,
         col = line_colour,
         pch = scaling_symbols[scaling_method],
         cex = 1.05
@@ -404,7 +404,7 @@ plot_metric_grid <- function(summary_results, result_set, method_spec, metric_sp
       paste(algorithm_labels[method_spec$algorithms], collapse = " and "),
       "; pk imbalance = ",
       pk_imbalance_fraction_to_plot,
-      "; ribbons show empirical 95% intervals over seeds"
+      "; lines show median; ribbons show IQR over seeds"
     ),
     outer = TRUE,
     side = 3,

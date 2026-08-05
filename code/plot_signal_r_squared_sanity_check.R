@@ -26,20 +26,21 @@ if (!dir.exists(plot_dir)) {
   dir.create(plot_dir, recursive = TRUE)
 }
 
-mean_ci <- function(x) {
+summarise_realised_signal <- function(x) {
   x <- x[!is.na(x)]
   n <- length(x)
 
   if (n == 0) {
-    return(c(n = 0, mean = NA_real_, sd = NA_real_, se = NA_real_, ci_low = NA_real_, ci_high = NA_real_))
+    return(c(n = 0, mean = NA_real_, median = NA_real_, sd = NA_real_, se = NA_real_, iqr_low = NA_real_, iqr_high = NA_real_))
   }
 
   x_mean <- mean(x)
+  x_median <- stats::median(x)
   x_sd <- if (n > 1) stats::sd(x) else NA_real_
   x_se <- if (n > 1) x_sd / sqrt(n) else NA_real_
-  x_ci_bounds <- stats::quantile(
+  x_iqr_bounds <- stats::quantile(
     x,
-    probs = c(0.025, 0.975),
+    probs = c(0.25, 0.75),
     names = FALSE,
     type = 7
   )
@@ -47,10 +48,11 @@ mean_ci <- function(x) {
   c(
     n = n,
     mean = x_mean,
+    median = x_median,
     sd = x_sd,
     se = x_se,
-    ci_low = x_ci_bounds[1],
-    ci_high = x_ci_bounds[2]
+    iqr_low = x_iqr_bounds[1],
+    iqr_high = x_iqr_bounds[2]
   )
 }
 
@@ -143,7 +145,7 @@ summarise_signal_data <- function(dat) {
   )
 
   out <- do.call(rbind, lapply(groups, function(group) {
-    ci <- mean_ci(group$realised_r_squared)
+    signal_summary <- summarise_realised_signal(group$realised_r_squared)
     data.frame(
       dataset_id = group$dataset_id[1],
       dataset_label = group$dataset_label[1],
@@ -151,14 +153,15 @@ summarise_signal_data <- function(dat) {
       pk_imbalance_fraction = group$pk_imbalance_fraction[1],
       ev_xy = group$ev_xy[1],
       ev_xx = group$ev_xx[1],
-      n_seeds = unname(ci[["n"]]),
-      mean_realised_r_squared = unname(ci[["mean"]]),
-      sd_realised_r_squared = unname(ci[["sd"]]),
-      se_realised_r_squared = unname(ci[["se"]]),
-      ci_low = unname(ci[["ci_low"]]),
-      ci_high = unname(ci[["ci_high"]]),
-      difference_from_target = unname(ci[["mean"]]) - group$ev_xy[1],
-      abs_difference_from_target = abs(unname(ci[["mean"]]) - group$ev_xy[1]),
+      n_seeds = unname(signal_summary[["n"]]),
+      mean_realised_r_squared = unname(signal_summary[["mean"]]),
+      median_realised_r_squared = unname(signal_summary[["median"]]),
+      sd_realised_r_squared = unname(signal_summary[["sd"]]),
+      se_realised_r_squared = unname(signal_summary[["se"]]),
+      iqr_low = unname(signal_summary[["iqr_low"]]),
+      iqr_high = unname(signal_summary[["iqr_high"]]),
+      difference_from_target = unname(signal_summary[["mean"]]) - group$ev_xy[1],
+      abs_difference_from_target = abs(unname(signal_summary[["mean"]]) - group$ev_xy[1]),
       stringsAsFactors = FALSE
     )
   }))
@@ -175,7 +178,7 @@ plot_signal_check <- function(summary_data, dataset_id, dataset_label) {
 
   ev_xx_values <- sort(unique(dat$ev_xx))
   ev_xy_values <- sort(unique(dat$ev_xy))
-  y_max <- max(c(dat$ci_high, dat$ev_xy), na.rm = TRUE)
+  y_max <- max(c(dat$iqr_high, dat$ev_xy), na.rm = TRUE)
   y_limit <- c(0, min(1, max(0.6, y_max * 1.08)))
 
   output_file <- file.path(plot_dir, paste0(dataset_id, "_signal_r_squared_sanity_check.png"))
@@ -215,7 +218,7 @@ plot_signal_check <- function(summary_data, dataset_id, dataset_label) {
 
       polygon(
         c(line_data$ev_xy, rev(line_data$ev_xy)),
-        c(line_data$ci_low, rev(line_data$ci_high)),
+        c(line_data$iqr_low, rev(line_data$iqr_high)),
         col = grDevices::adjustcolor(colour, alpha.f = 0.16),
         border = NA
       )
@@ -241,7 +244,7 @@ plot_signal_check <- function(summary_data, dataset_id, dataset_label) {
     font = 2
   )
   mtext(
-    "Dashed line shows target evxy; ribbons show empirical 95% intervals over seeds",
+    "Dashed line shows target evxy; ribbons show IQR over seeds",
     side = 3,
     outer = TRUE,
     line = 0.8,

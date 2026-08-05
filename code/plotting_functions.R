@@ -133,26 +133,26 @@ run_metric_plots <- function() {
     scaling_levels
   }
 
-  mean_ci <- function(values) {
+  median_iqr <- function(values) {
     values <- values[!is.na(values)]
     n_values <- length(values)
 
     if (n_values == 0) {
-      return(c(mean = NA_real_, ci_low = NA_real_, ci_high = NA_real_, n = 0))
+      return(c(median = NA_real_, iqr_low = NA_real_, iqr_high = NA_real_, n = 0))
     }
 
-    mean_value <- mean(values)
-    ci_bounds <- stats::quantile(
+    median_value <- stats::median(values)
+    iqr_bounds <- stats::quantile(
       values,
-      probs = c(0.025, 0.975),
+      probs = c(0.25, 0.75),
       names = FALSE,
       type = 7
     )
 
     c(
-      mean = mean_value,
-      ci_low = max(0, ci_bounds[1]),
-      ci_high = min(1, ci_bounds[2]),
+      median = median_value,
+      iqr_low = max(0, iqr_bounds[1]),
+      iqr_high = min(1, iqr_bounds[2]),
       n = n_values
     )
   }
@@ -170,7 +170,7 @@ run_metric_plots <- function() {
     )
 
     summary_rows <- lapply(split(data, split_keys), function(piece) {
-      stats <- mean_ci(piece[[metric]])
+      stats <- median_iqr(piece[[metric]])
 
       data.frame(
         algorithm = piece$algorithm[1],
@@ -181,9 +181,9 @@ run_metric_plots <- function() {
         ev_xy = piece$ev_xy[1],
         ev_xx = piece$ev_xx[1],
         metric = metric,
-        mean = stats[["mean"]],
-        ci_low = stats[["ci_low"]],
-        ci_high = stats[["ci_high"]],
+        median = stats[["median"]],
+        iqr_low = stats[["iqr_low"]],
+        iqr_high = stats[["iqr_high"]],
         n = stats[["n"]],
         stringsAsFactors = FALSE
       )
@@ -281,14 +281,14 @@ run_metric_plots <- function() {
 
         graphics::polygon(
           x = c(line_data$rarity_x, rev(line_data$rarity_x)),
-          y = c(line_data$ci_low, rev(line_data$ci_high)),
+          y = c(line_data$iqr_low, rev(line_data$iqr_high)),
           col = grDevices::adjustcolor(line_colour, alpha.f = 0.06),
           border = NA
         )
 
         graphics::lines(
           line_data$rarity_x,
-          line_data$mean,
+          line_data$median,
           col = line_colour,
           lty = 1,
           lwd = 2.4
@@ -296,7 +296,7 @@ run_metric_plots <- function() {
 
         graphics::points(
           line_data$rarity_x,
-          line_data$mean,
+          line_data$median,
           col = line_colour,
           pch = scaling_symbols[scaling_method],
           cex = 0.85
@@ -466,7 +466,7 @@ run_metric_plots <- function() {
         binary_fraction_to_plot,
         "; pk imbalance = ",
         pk_imbalance_fraction_to_plot,
-        "; ribbons show empirical 95% intervals over seeds"
+        "; lines show median; ribbons show IQR over seeds"
       ),
       outer = TRUE,
       side = 3,
@@ -752,26 +752,26 @@ run_subgroup_plots <- function() {
     subgroup_spec$groups[[colour_column]][group_index]
   }
 
-  mean_ci <- function(values) {
+  median_iqr <- function(values) {
     values <- values[!is.na(values)]
     n_values <- length(values)
 
     if (n_values == 0) {
-      return(c(mean = NA_real_, ci_low = NA_real_, ci_high = NA_real_, n = 0))
+      return(c(median = NA_real_, iqr_low = NA_real_, iqr_high = NA_real_, n = 0))
     }
 
-    mean_value <- mean(values)
-    ci_bounds <- stats::quantile(
+    median_value <- stats::median(values)
+    iqr_bounds <- stats::quantile(
       values,
-      probs = c(0.025, 0.975),
+      probs = c(0.25, 0.75),
       names = FALSE,
       type = 7
     )
 
     c(
-      mean = mean_value,
-      ci_low = max(0, ci_bounds[1]),
-      ci_high = min(1, ci_bounds[2]),
+      median = median_value,
+      iqr_low = max(0, iqr_bounds[1]),
+      iqr_high = min(1, iqr_bounds[2]),
       n = n_values
     )
   }
@@ -813,7 +813,7 @@ run_subgroup_plots <- function() {
           metric_values <- rep(NA_real_, length(metric_values))
         }
 
-        stats <- mean_ci(metric_values)
+        stats <- median_iqr(metric_values)
 
         data.frame(
           algorithm = piece$algorithm[1],
@@ -827,9 +827,9 @@ run_subgroup_plots <- function() {
           subgroup_label = subgroup_spec$groups$label[group_index],
           subgroup_colour = subgroup_spec$groups$colour_none[group_index],
           metric = metric,
-          mean = stats[["mean"]],
-          ci_low = stats[["ci_low"]],
-          ci_high = stats[["ci_high"]],
+          median = stats[["median"]],
+          iqr_low = stats[["iqr_low"]],
+          iqr_high = stats[["iqr_high"]],
           n = stats[["n"]],
           stringsAsFactors = FALSE
         )
@@ -932,18 +932,18 @@ run_subgroup_plots <- function() {
               panel_data$scaling_method == scaling_method,
           ]
 
-          if (nrow(line_data) == 0 || all(is.na(line_data$mean))) {
+          if (nrow(line_data) == 0 || all(is.na(line_data$median))) {
             next
           }
 
           line_data <- line_data[order(line_data$rarity_x), ]
           ribbon_data <- line_data[
-            is.finite(line_data$ci_low) &
-              is.finite(line_data$ci_high),
+            is.finite(line_data$iqr_low) &
+              is.finite(line_data$iqr_high),
             ,
             drop = FALSE
           ]
-          point_data <- line_data[is.finite(line_data$mean), , drop = FALSE]
+          point_data <- line_data[is.finite(line_data$median), , drop = FALSE]
 
           if (nrow(point_data) == 0) {
             next
@@ -963,7 +963,7 @@ run_subgroup_plots <- function() {
           if (nrow(ribbon_data) >= 2) {
             graphics::polygon(
               x = c(ribbon_data$rarity_x, rev(ribbon_data$rarity_x)),
-              y = c(ribbon_data$ci_low, rev(ribbon_data$ci_high)),
+              y = c(ribbon_data$iqr_low, rev(ribbon_data$iqr_high)),
               col = grDevices::adjustcolor(line_colour, alpha.f = 0.06),
               border = NA
             )
@@ -971,7 +971,7 @@ run_subgroup_plots <- function() {
 
           graphics::lines(
             point_data$rarity_x,
-            point_data$mean,
+            point_data$median,
             col = line_colour,
             lty = line_type,
             lwd = 2.6
@@ -979,7 +979,7 @@ run_subgroup_plots <- function() {
 
           graphics::points(
             point_data$rarity_x,
-            point_data$mean,
+            point_data$median,
             col = line_colour,
             pch = scaling_symbols[scaling_method],
             cex = 1.00
@@ -1010,7 +1010,7 @@ run_subgroup_plots <- function() {
       pk_imbalance_fraction = pk_imbalance_fraction
     )
 
-    if (nrow(plot_data) == 0 || all(is.na(plot_data$mean))) {
+    if (nrow(plot_data) == 0 || all(is.na(plot_data$median))) {
       warning(
         "No subgroup plot data for ",
         result_set$id,
@@ -1216,7 +1216,7 @@ run_subgroup_plots <- function() {
         result_set$label,
         "; pk imbalance = ",
         pk_imbalance_fraction,
-        "; ribbons show empirical 95% intervals over seeds"
+        "; lines show median; ribbons show IQR over seeds"
       ),
       outer = TRUE,
       side = 3,
@@ -1397,7 +1397,7 @@ run_subgroup_plots <- function() {
         })
       )
 
-      if (nrow(summary_results) == 0 || all(is.na(summary_results$mean))) {
+      if (nrow(summary_results) == 0 || all(is.na(summary_results$median))) {
         warning("Skipping empty subgroup comparison: ", result_set$id, " / ", subgroup_spec$id)
         next
       }
