@@ -251,8 +251,8 @@ plot_f1_panel <- function(plot_data,
     ylab = if (show_y_label) row_label else "",
     main = col_label,
     xaxt = "n",
-    cex.lab = 1.55,
-    cex.main = 1.58,
+    cex.lab = 1.70,
+    cex.main = 1.85,
     cex.axis = 1.22
   )
 
@@ -381,12 +381,12 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
     rep(n_corr * n_noise + 1, n_noise)
   )
 
-  graphics::layout(layout_matrix, heights = c(rep(1, n_corr), 0.55))
+  graphics::layout(layout_matrix, heights = c(rep(1, n_corr), 0.42))
   graphics::par(oma = c(0, 0, 6.2, 0))
 
   for (corr_index in seq_along(ev_xx_rows_to_plot)) {
     for (noise_index in seq_along(ev_xy_cols_to_plot)) {
-      panel_bottom_margin <- if (corr_index == n_corr) 4.5 else 2.1
+      panel_bottom_margin <- if (corr_index == n_corr) 3.6 else 2.1
       graphics::par(mar = c(panel_bottom_margin, 6.4, 2.8, 1.8))
 
       plot_f1_panel(
@@ -450,8 +450,8 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
     lwd = 3.0,
     ncol = length(method_spec$algorithms),
     bty = "n",
-    cex = 1.38,
-    pt.cex = 1.45
+    cex = 1.55,
+    pt.cex = 1.60
   )
 
   invisible(output_file)

@@ -256,8 +256,8 @@ run_metric_plots <- function() {
       ylab = if (show_y_label) row_label else "",
       main = metric_label,
       xaxt = "n",
-      cex.lab = 1.55,
-      cex.main = 1.65,
+      cex.lab = 1.70,
+      cex.main = 1.90,
       cex.axis = 1.22
     )
 
@@ -393,7 +393,7 @@ run_metric_plots <- function() {
     legend_id <- next_figure_id
     layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
     layout_matrix <- do.call(rbind, layout_rows)
-    row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.58)
+    row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.48)
 
     graphics::layout(layout_matrix, heights = row_heights)
     graphics::par(oma = c(0, 0, 7.2, 0))
@@ -429,7 +429,8 @@ run_metric_plots <- function() {
         for (metric_index in seq_len(n_metric)) {
           row_label <- names(ev_xx_rows_to_plot)[corr_index]
 
-          graphics::par(mar = c(3.7, 5.6, 2.2, 0.9))
+          panel_bottom_margin <- if (row_index == n_panel_rows) 3.4 else 2.4
+          graphics::par(mar = c(panel_bottom_margin, 5.6, 2.2, 0.9))
 
           plot_metric_panel(
             plot_data = plot_data,
@@ -496,8 +497,8 @@ run_metric_plots <- function() {
       lwd = 3.0,
       ncol = length(algorithms),
       bty = "n",
-      cex = 1.30,
-      pt.cex = 1.40
+      cex = 1.48,
+      pt.cex = 1.55
     )
 
     invisible(output_file)
@@ -913,8 +914,8 @@ run_subgroup_plots <- function() {
       ylab = if (show_y_label) row_label else "",
       main = metric_label,
       xaxt = "n",
-      cex.lab = 1.55,
-      cex.main = 1.58,
+      cex.lab = 1.70,
+      cex.main = 1.85,
       cex.axis = 1.22
     )
 
@@ -1101,7 +1102,7 @@ run_subgroup_plots <- function() {
       legend_id <- next_figure_id
       layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_blocks)
       layout_matrix <- do.call(rbind, layout_rows)
-      row_heights <- c(rep(1, n_corr), 0.72)
+      row_heights <- c(rep(1, n_corr), 0.58)
 
       graphics::layout(layout_matrix, heights = row_heights)
       graphics::par(oma = c(0, 0, 7.0, 1.4))
@@ -1112,7 +1113,7 @@ run_subgroup_plots <- function() {
         for (block_index in seq_along(ev_xy_blocks_to_plot)) {
           ev_xy_value <- as.numeric(ev_xy_blocks_to_plot[block_index])
 
-          panel_bottom_margin <- if (corr_index == n_corr) 4.4 else 2.0
+          panel_bottom_margin <- if (corr_index == n_corr) 3.5 else 2.0
           graphics::par(mar = c(panel_bottom_margin, 6.4, 2.6, 1.8))
 
           plot_subgroup_panel(
@@ -1150,7 +1151,7 @@ run_subgroup_plots <- function() {
       legend_id <- next_figure_id
       layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
       layout_matrix <- do.call(rbind, layout_rows)
-      row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.72)
+      row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.58)
 
       graphics::layout(layout_matrix, heights = row_heights)
       graphics::par(oma = c(0, 0, 8.4, 1.4))
@@ -1164,14 +1165,14 @@ run_subgroup_plots <- function() {
         graphics::par(mar = c(0, 0, 0, 0))
         graphics::plot.new()
         graphics::rect(0.01, 0.08, 0.99, 0.92, border = "grey70", lwd = 1.2)
-        graphics::text(0.5, 0.5, labels = block_label, cex = 2.15, font = 2)
+        graphics::text(0.5, 0.5, labels = block_label, cex = 2.35, font = 2)
 
         for (corr_index in seq_along(ev_xx_rows_to_plot)) {
           ev_xx_value <- as.numeric(ev_xx_rows_to_plot[corr_index])
           row_index <- row_index + 1
 
           for (metric_index in seq_len(n_metric)) {
-            panel_bottom_margin <- if (row_index == n_panel_rows) 4.4 else 2.0
+            panel_bottom_margin <- if (row_index == n_panel_rows) 3.5 else 2.0
             graphics::par(mar = c(panel_bottom_margin, 6.4, 2.6, 1.8))
 
             plot_subgroup_panel(
@@ -1241,7 +1242,7 @@ run_subgroup_plots <- function() {
     legend_title_y <- 0.84
     legend_item_y <- 0.68
     legend_row_step <- 0.16
-    legend_cex <- 1.24
+    legend_cex <- 1.38
 
     graphics::text(
       x = 0.03,
