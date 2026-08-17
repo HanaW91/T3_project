@@ -91,7 +91,7 @@ ev_xx_rows <- c(
 )
 
 scaling_labels <- c(
-  cont = "Continuous only",
+  cont = "1 SD cont. only",
   none = "No scaling",
   zscore = "Z-score",
   `2sd` = "2 SD"
@@ -112,22 +112,22 @@ algorithm_labels <- c(
 )
 
 line_colours <- c(
-  cv_lasso_min__cont = "#0072B2",
-  cv_lasso_min__none = "#0072B2",
-  cv_lasso_min__zscore = "#56B4E9",
-  cv_lasso_min__2sd = "#332288",
-  cv_lasso_1se__cont = "#D55E00",
-  cv_lasso_1se__none = "#D55E00",
-  cv_lasso_1se__zscore = "#009E73",
-  cv_lasso_1se__2sd = "#CC79A7",
-  ncat_null__cont = "#009E73",
-  ncat_null__none = "#009E73",
-  ncat_null__zscore = "#56B4E9",
-  ncat_null__2sd = "#44AA99",
+  cv_lasso_min__cont = "#1f77b4",
+  cv_lasso_min__none = "#1f77b4",
+  cv_lasso_min__zscore = "#17becf",
+  cv_lasso_min__2sd = "#9467bd",
+  cv_lasso_1se__cont = "#ff7f0e",
+  cv_lasso_1se__none = "#ff7f0e",
+  cv_lasso_1se__zscore = "#bcbd22",
+  cv_lasso_1se__2sd = "#d62728",
+  ncat_null__cont = "#2ca02c",
+  ncat_null__none = "#2ca02c",
+  ncat_null__zscore = "#20a386",
+  ncat_null__2sd = "#8dd3c7",
   ncat_3__cont = "#CC79A7",
   ncat_3__none = "#CC79A7",
-  ncat_3__zscore = "#882255",
-  ncat_3__2sd = "#AA4499"
+  ncat_3__zscore = "#D65F9E",
+  ncat_3__2sd = "#B07AA1"
 )
 
 format_file_value <- function(value) {
@@ -251,16 +251,16 @@ plot_f1_panel <- function(plot_data,
     ylab = if (show_y_label) row_label else "",
     main = col_label,
     xaxt = "n",
-    cex.lab = 1.35,
-    cex.main = 1.35,
-    cex.axis = 1.05
+    cex.lab = 1.55,
+    cex.main = 1.58,
+    cex.axis = 1.22
   )
 
   graphics::axis(
     1,
     at = x_values,
     labels = if (show_x_label) x_labels else FALSE,
-    cex.axis = 1.08,
+    cex.axis = 1.25,
     tck = -0.015
   )
   graphics::grid(col = "grey90")
@@ -431,8 +431,8 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
   graphics::par(mar = c(0, 0, 0, 0))
   graphics::plot.new()
   legend_grid <- expand.grid(
-    algorithm = method_spec$algorithms,
     scaling_method = scaling_methods,
+    algorithm = method_spec$algorithms,
     stringsAsFactors = FALSE
   )
   legend_labels <- paste(
@@ -448,10 +448,10 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
     pch = scaling_symbols[legend_grid$scaling_method],
     lty = 1,
     lwd = 3.0,
-    ncol = 2,
+    ncol = length(method_spec$algorithms),
     bty = "n",
-    cex = 1.25,
-    pt.cex = 1.35
+    cex = 1.38,
+    pt.cex = 1.45
   )
 
   invisible(output_file)

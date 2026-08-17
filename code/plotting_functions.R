@@ -89,7 +89,7 @@ run_metric_plots <- function() {
   )
 
   scaling_levels <- c("cont", "zscore", "2sd")
-  scaling_labels <- c(none = "No scaling", cont = "Continuous only", zscore = "Z-score", `2sd` = "2 SD")
+  scaling_labels <- c(none = "No scaling", cont = "1 SD cont. only", zscore = "Z-score", `2sd` = "2 SD")
   scaling_symbols <- c(none = 16, cont = 16, zscore = 17, `2sd` = 15)
   algorithm_labels <- c(
     cv_lasso_min = "lambda.min",
@@ -256,12 +256,12 @@ run_metric_plots <- function() {
       ylab = if (show_y_label) row_label else "",
       main = metric_label,
       xaxt = "n",
-      cex.lab = 1.35,
-      cex.main = 1.50,
-      cex.axis = 1.02
+      cex.lab = 1.55,
+      cex.main = 1.65,
+      cex.axis = 1.22
     )
 
-    graphics::axis(1, at = x_values, labels = x_labels, cex.axis = 1.15)
+    graphics::axis(1, at = x_values, labels = x_labels, cex.axis = 1.25)
     graphics::grid(col = "grey88")
 
     for (algorithm in algorithms) {
@@ -477,8 +477,8 @@ run_metric_plots <- function() {
     graphics::par(mar = c(0, 0, 0, 0))
     graphics::plot.new()
     legend_grid <- expand.grid(
-      algorithm = algorithms,
       scaling_method = scaling_methods_to_plot,
+      algorithm = algorithms,
       stringsAsFactors = FALSE
     )
     legend_labels <- paste(
@@ -494,10 +494,10 @@ run_metric_plots <- function() {
       pch = scaling_symbols[legend_grid$scaling_method],
       lty = 1,
       lwd = 3.0,
-      ncol = 3,
+      ncol = length(algorithms),
       bty = "n",
-      cex = 1.18,
-      pt.cex = 1.25
+      cex = 1.30,
+      pt.cex = 1.40
     )
 
     invisible(output_file)
@@ -659,8 +659,8 @@ run_subgroup_plots <- function() {
         label = c("Rare binary", "Non-rare binary"),
         colour_none = c("#D55E00", "#0072B2"),
         colour_cont = c("#D55E00", "#0072B2"),
-        colour_zscore = c("#D55E00", "#0072B2"),
-        colour_2sd = c("#D55E00", "#0072B2"),
+        colour_zscore = c("#E69F00", "#56B4E9"),
+        colour_2sd = c("#A65E00", "#004C8C"),
         stringsAsFactors = FALSE
       )
     ),
@@ -672,8 +672,8 @@ run_subgroup_plots <- function() {
         label = c("Binary", "Continuous"),
         colour_none = c("#009E73", "#CC79A7"),
         colour_cont = c("#009E73", "#CC79A7"),
-        colour_zscore = c("#009E73", "#CC79A7"),
-        colour_2sd = c("#009E73", "#CC79A7"),
+        colour_zscore = c("#66C2A5", "#F781BF"),
+        colour_2sd = c("#006D4F", "#984EA3"),
         stringsAsFactors = FALSE
       )
     ),
@@ -685,15 +685,15 @@ run_subgroup_plots <- function() {
         label = c("Rare binary", "Non-rare binary", "Continuous"),
         colour_none = c("#D55E00", "#0072B2", "#CC79A7"),
         colour_cont = c("#D55E00", "#0072B2", "#CC79A7"),
-        colour_zscore = c("#D55E00", "#0072B2", "#CC79A7"),
-        colour_2sd = c("#D55E00", "#0072B2", "#CC79A7"),
+        colour_zscore = c("#E69F00", "#56B4E9", "#F781BF"),
+        colour_2sd = c("#A65E00", "#004C8C", "#984EA3"),
         stringsAsFactors = FALSE
       )
     )
   )
 
   scaling_levels <- c("cont", "zscore", "2sd")
-  scaling_labels <- c(none = "No scaling", cont = "Continuous only", zscore = "Z-score", `2sd` = "2 SD")
+  scaling_labels <- c(none = "No scaling", cont = "1 SD cont. only", zscore = "Z-score", `2sd` = "2 SD")
   scaling_symbols <- c(none = 16, cont = 16, zscore = 17, `2sd` = 15)
   algorithm_labels <- c(
     cv_lasso_min = "lambda.min",
@@ -913,16 +913,16 @@ run_subgroup_plots <- function() {
       ylab = if (show_y_label) row_label else "",
       main = metric_label,
       xaxt = "n",
-      cex.lab = 1.35,
-      cex.main = 1.38,
-      cex.axis = 1.02
+      cex.lab = 1.55,
+      cex.main = 1.58,
+      cex.axis = 1.22
     )
 
     graphics::axis(
       1,
       at = x_values,
       labels = if (show_x_label) x_labels else FALSE,
-      cex.axis = 1.08,
+      cex.axis = 1.25,
       tck = -0.015
     )
     graphics::grid(col = "grey92")
@@ -1241,7 +1241,7 @@ run_subgroup_plots <- function() {
     legend_title_y <- 0.84
     legend_item_y <- 0.68
     legend_row_step <- 0.16
-    legend_cex <- 1.12
+    legend_cex <- 1.24
 
     graphics::text(
       x = 0.03,
