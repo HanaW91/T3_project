@@ -75,10 +75,10 @@ ev_xy_cols <- c(
 )
 
 ev_xx_rows <- c(
-  `No corr (evxx = 0)` = 0,
-  `Low corr (evxx = 0.1)` = 0.1,
-  `Medium corr (evxx = 0.5)` = 0.5,
-  `High corr (evxx = 0.9)` = 0.9
+  `No corr\n(evxx = 0)` = 0,
+  `Low corr\n(evxx = 0.1)` = 0.1,
+  `Medium corr\n(evxx = 0.5)` = 0.5,
+  `High corr\n(evxx = 0.9)` = 0.9
 )
 
 scaling_labels <- c(
@@ -103,22 +103,22 @@ algorithm_labels <- c(
 )
 
 line_colours <- c(
-  cv_lasso_min__none = "#1f77b4",
-  cv_lasso_min__cont = "#1f77b4",
-  cv_lasso_min__zscore = "#17becf",
-  cv_lasso_min__2sd = "#9467bd",
-  cv_lasso_1se__none = "#ff7f0e",
-  cv_lasso_1se__cont = "#ff7f0e",
-  cv_lasso_1se__zscore = "#bcbd22",
-  cv_lasso_1se__2sd = "#d62728",
-  ncat_null__none = "#2ca02c",
-  ncat_null__cont = "#2ca02c",
-  ncat_null__zscore = "#20a386",
-  ncat_null__2sd = "#8dd3c7",
+  cv_lasso_min__none = "#0072B2",
+  cv_lasso_min__cont = "#0072B2",
+  cv_lasso_min__zscore = "#56B4E9",
+  cv_lasso_min__2sd = "#332288",
+  cv_lasso_1se__none = "#D55E00",
+  cv_lasso_1se__cont = "#D55E00",
+  cv_lasso_1se__zscore = "#009E73",
+  cv_lasso_1se__2sd = "#CC79A7",
+  ncat_null__none = "#009E73",
+  ncat_null__cont = "#009E73",
+  ncat_null__zscore = "#56B4E9",
+  ncat_null__2sd = "#44AA99",
   ncat_3__none = "#CC79A7",
   ncat_3__cont = "#CC79A7",
-  ncat_3__zscore = "#D65F9E",
-  ncat_3__2sd = "#B07AA1"
+  ncat_3__zscore = "#882255",
+  ncat_3__2sd = "#AA4499"
 )
 
 scaling_levels_for_binary_fraction <- function(binary_fraction) {
@@ -251,11 +251,17 @@ plot_metric_panel <- function(plot_data,
     main = col_label,
     xaxt = "n",
     cex.lab = 1.35,
-    cex.main = 1.45,
+    cex.main = 1.35,
     cex.axis = 1.05
   )
 
-  graphics::axis(1, at = x_values, labels = x_labels, cex.axis = 1.12)
+  graphics::axis(
+    1,
+    at = x_values,
+    labels = if (show_x_label) x_labels else FALSE,
+    cex.axis = 1.08,
+    tck = -0.015
+  )
   graphics::grid(col = "grey90")
 
   for (algorithm in algorithms) {
@@ -283,7 +289,7 @@ plot_metric_panel <- function(plot_data,
         graphics::polygon(
           x = c(line_data$rarity_x, rev(line_data$rarity_x)),
           y = c(line_data$iqr_low, rev(line_data$iqr_high)),
-          col = grDevices::adjustcolor(line_colour, alpha.f = 0.10),
+          col = grDevices::adjustcolor(line_colour, alpha.f = 0.08),
           border = NA
         )
       }
@@ -293,7 +299,7 @@ plot_metric_panel <- function(plot_data,
         line_data$median,
         col = line_colour,
         lty = 1,
-        lwd = 2.7
+        lwd = 3.0
       )
 
       graphics::points(
@@ -301,7 +307,7 @@ plot_metric_panel <- function(plot_data,
         line_data$median,
         col = line_colour,
         pch = scaling_symbols[scaling_method],
-        cex = 1.05
+        cex = 1.15
       )
     }
   }
@@ -348,7 +354,7 @@ plot_metric_grid <- function(summary_results, result_set, method_spec, metric_sp
   grDevices::png(
     filename = output_file,
     width = 3600,
-    height = 2600,
+    height = 4000,
     res = 220,
     pointsize = 14
   )
@@ -366,12 +372,13 @@ plot_metric_grid <- function(summary_results, result_set, method_spec, metric_sp
     rep(n_corr * n_noise + 1, n_noise)
   )
 
-  graphics::layout(layout_matrix, heights = c(rep(1, n_corr), 0.35))
-  graphics::par(oma = c(0, 0, 5.9, 0))
+  graphics::layout(layout_matrix, heights = c(rep(1, n_corr), 0.55))
+  graphics::par(oma = c(0, 0, 6.2, 0))
 
   for (corr_index in seq_along(ev_xx_rows_to_plot)) {
     for (noise_index in seq_along(ev_xy_cols_to_plot)) {
-      graphics::par(mar = c(4.1, 5.8, 2.7, 2.0))
+      panel_bottom_margin <- if (corr_index == n_corr) 4.5 else 2.1
+      graphics::par(mar = c(panel_bottom_margin, 6.4, 2.8, 1.8))
 
       plot_metric_panel(
         plot_data = plot_data,
@@ -392,7 +399,7 @@ plot_metric_grid <- function(summary_results, result_set, method_spec, metric_sp
     outer = TRUE,
     side = 3,
     line = 4.2,
-    cex = 1.45,
+    cex = 1.55,
     font = 2
   )
 
@@ -409,7 +416,7 @@ plot_metric_grid <- function(summary_results, result_set, method_spec, metric_sp
     outer = TRUE,
     side = 3,
     line = 2.4,
-    cex = 0.95
+    cex = 1.00
   )
 
   graphics::par(mar = c(0, 0, 0, 0))
@@ -434,8 +441,8 @@ plot_metric_grid <- function(summary_results, result_set, method_spec, metric_sp
     lwd = 3.0,
     ncol = if (result_set$binary_fraction == 1) 2 else 3,
     bty = "n",
-    cex = 1.18,
-    pt.cex = 1.25
+    cex = 1.25,
+    pt.cex = 1.35
   )
 
   invisible(output_file)

@@ -620,15 +620,15 @@ run_subgroup_plots <- function() {
 
   pk_imbalance_fractions_to_plot <- c(0.2)
   ev_xy_blocks <- c(
-    `Low noise (evxy = 0.5)` = 0.5,
-    `Medium noise (evxy = 0.2)` = 0.2,
-    `High noise (evxy = 0.05)` = 0.05
+    `Low noise\n(evxy = 0.5)` = 0.5,
+    `Medium noise\n(evxy = 0.2)` = 0.2,
+    `High noise\n(evxy = 0.05)` = 0.05
   )
   ev_xx_rows <- c(
-    `No corr (evxx = 0)` = 0,
-    `Low corr (evxx = 0.1)` = 0.1,
-    `Medium corr (evxx = 0.5)` = 0.5,
-    `High corr (evxx = 0.9)` = 0.9
+    `No corr\n(evxx = 0)` = 0,
+    `Low corr\n(evxx = 0.1)` = 0.1,
+    `Medium corr\n(evxx = 0.5)` = 0.5,
+    `High corr\n(evxx = 0.9)` = 0.9
   )
 
   method_specs <- list(
@@ -659,8 +659,8 @@ run_subgroup_plots <- function() {
         label = c("Rare binary", "Non-rare binary"),
         colour_none = c("#D55E00", "#0072B2"),
         colour_cont = c("#D55E00", "#0072B2"),
-        colour_zscore = c("#E69F00", "#56B4E9"),
-        colour_2sd = c("#A65E00", "#004C8C"),
+        colour_zscore = c("#D55E00", "#0072B2"),
+        colour_2sd = c("#D55E00", "#0072B2"),
         stringsAsFactors = FALSE
       )
     ),
@@ -672,8 +672,8 @@ run_subgroup_plots <- function() {
         label = c("Binary", "Continuous"),
         colour_none = c("#009E73", "#CC79A7"),
         colour_cont = c("#009E73", "#CC79A7"),
-        colour_zscore = c("#66C2A5", "#F781BF"),
-        colour_2sd = c("#006D4F", "#984EA3"),
+        colour_zscore = c("#009E73", "#CC79A7"),
+        colour_2sd = c("#009E73", "#CC79A7"),
         stringsAsFactors = FALSE
       )
     ),
@@ -685,8 +685,8 @@ run_subgroup_plots <- function() {
         label = c("Rare binary", "Non-rare binary", "Continuous"),
         colour_none = c("#D55E00", "#0072B2", "#CC79A7"),
         colour_cont = c("#D55E00", "#0072B2", "#CC79A7"),
-        colour_zscore = c("#E69F00", "#56B4E9", "#F781BF"),
-        colour_2sd = c("#A65E00", "#004C8C", "#984EA3"),
+        colour_zscore = c("#D55E00", "#0072B2", "#CC79A7"),
+        colour_2sd = c("#D55E00", "#0072B2", "#CC79A7"),
         stringsAsFactors = FALSE
       )
     )
@@ -914,11 +914,17 @@ run_subgroup_plots <- function() {
       main = metric_label,
       xaxt = "n",
       cex.lab = 1.35,
-      cex.main = 1.50,
+      cex.main = 1.38,
       cex.axis = 1.02
     )
 
-    graphics::axis(1, at = x_values, labels = x_labels, cex.axis = 1.15)
+    graphics::axis(
+      1,
+      at = x_values,
+      labels = if (show_x_label) x_labels else FALSE,
+      cex.axis = 1.08,
+      tck = -0.015
+    )
     graphics::grid(col = "grey92")
 
     for (group_index in seq_len(nrow(subgroup_spec$groups))) {
@@ -964,7 +970,7 @@ run_subgroup_plots <- function() {
             graphics::polygon(
               x = c(ribbon_data$rarity_x, rev(ribbon_data$rarity_x)),
               y = c(ribbon_data$iqr_low, rev(ribbon_data$iqr_high)),
-              col = grDevices::adjustcolor(line_colour, alpha.f = 0.06),
+              col = grDevices::adjustcolor(line_colour, alpha.f = 0.045),
               border = NA
             )
           }
@@ -974,7 +980,7 @@ run_subgroup_plots <- function() {
             point_data$median,
             col = line_colour,
             lty = line_type,
-            lwd = 2.6
+            lwd = 3.0
           )
 
           graphics::points(
@@ -982,7 +988,7 @@ run_subgroup_plots <- function() {
             point_data$median,
             col = line_colour,
             pch = scaling_symbols[scaling_method],
-            cex = 1.00
+            cex = 1.15
           )
         }
       }
@@ -1062,8 +1068,8 @@ run_subgroup_plots <- function() {
 
     grDevices::png(
       filename = output_file,
-      width = 3400,
-      height = 3600,
+      width = 3800,
+      height = 4000,
       res = 220,
       pointsize = 14
     )
@@ -1095,10 +1101,10 @@ run_subgroup_plots <- function() {
       legend_id <- next_figure_id
       layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_blocks)
       layout_matrix <- do.call(rbind, layout_rows)
-      row_heights <- c(rep(1, n_corr), 0.58)
+      row_heights <- c(rep(1, n_corr), 0.72)
 
       graphics::layout(layout_matrix, heights = row_heights)
-      graphics::par(oma = c(0, 0, 6.6, 1.4))
+      graphics::par(oma = c(0, 0, 7.0, 1.4))
 
       for (corr_index in seq_along(ev_xx_rows_to_plot)) {
         ev_xx_value <- as.numeric(ev_xx_rows_to_plot[corr_index])
@@ -1106,7 +1112,8 @@ run_subgroup_plots <- function() {
         for (block_index in seq_along(ev_xy_blocks_to_plot)) {
           ev_xy_value <- as.numeric(ev_xy_blocks_to_plot[block_index])
 
-          graphics::par(mar = c(4.0, 6.0, 2.4, 1.8))
+          panel_bottom_margin <- if (corr_index == n_corr) 4.4 else 2.0
+          graphics::par(mar = c(panel_bottom_margin, 6.4, 2.6, 1.8))
 
           plot_subgroup_panel(
             plot_data = plot_data,
@@ -1143,10 +1150,10 @@ run_subgroup_plots <- function() {
       legend_id <- next_figure_id
       layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
       layout_matrix <- do.call(rbind, layout_rows)
-      row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.58)
+      row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.72)
 
       graphics::layout(layout_matrix, heights = row_heights)
-      graphics::par(oma = c(0, 0, 8.0, 1.4))
+      graphics::par(oma = c(0, 0, 8.4, 1.4))
 
       row_index <- 0
 
@@ -1164,7 +1171,8 @@ run_subgroup_plots <- function() {
           row_index <- row_index + 1
 
           for (metric_index in seq_len(n_metric)) {
-            graphics::par(mar = c(4.0, 6.0, 2.4, 1.8))
+            panel_bottom_margin <- if (row_index == n_panel_rows) 4.4 else 2.0
+            graphics::par(mar = c(panel_bottom_margin, 6.4, 2.6, 1.8))
 
             plot_subgroup_panel(
               plot_data = plot_data,
@@ -1192,8 +1200,8 @@ run_subgroup_plots <- function() {
       },
       outer = TRUE,
       side = 3,
-      line = 5.6,
-      cex = 1.38,
+      line = 5.8,
+      cex = 1.48,
       font = 2
     )
 
@@ -1220,8 +1228,8 @@ run_subgroup_plots <- function() {
       ),
       outer = TRUE,
       side = 3,
-      line = 3.7,
-      cex = 0.94
+      line = 3.8,
+      cex = 1.00
     )
 
     graphics::par(mar = c(0, 0, 0, 0))
@@ -1229,11 +1237,11 @@ run_subgroup_plots <- function() {
     graphics::plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
 
     show_algorithm_legend <- length(method_spec$algorithms) > 1
-    scaling_legend_x <- if (show_algorithm_legend) 0.67 else 0.42
-    legend_title_y <- 0.88
-    legend_item_y <- 0.76
-    legend_row_step <- 0.13
-    legend_cex <- 1.02
+    scaling_legend_x <- if (show_algorithm_legend) 0.66 else 0.44
+    legend_title_y <- 0.84
+    legend_item_y <- 0.68
+    legend_row_step <- 0.16
+    legend_cex <- 1.12
 
     graphics::text(
       x = 0.03,
@@ -1250,7 +1258,7 @@ run_subgroup_plots <- function() {
         x1 = 0.08,
         y1 = row_y,
         col = subgroup_spec$groups$colour_none[group_index],
-        lwd = 3.0
+        lwd = 3.4
       )
       graphics::text(
         x = 0.09,
@@ -1279,7 +1287,7 @@ run_subgroup_plots <- function() {
           y1 = row_y,
           col = "grey20",
           lty = algorithm_line_types[algorithm],
-          lwd = 3.0
+          lwd = 3.4
         )
         graphics::text(
           x = 0.43,
@@ -1315,14 +1323,14 @@ run_subgroup_plots <- function() {
           x1 = glyph_x + 0.028,
           y1 = scaling_y,
           col = glyph_colour,
-          lwd = 3.0
+          lwd = 3.4
         )
         graphics::points(
           x = glyph_x + 0.014,
           y = scaling_y,
           col = glyph_colour,
           pch = scaling_symbols[scaling_method],
-          cex = 1.30
+          cex = 1.40
         )
       }
 
