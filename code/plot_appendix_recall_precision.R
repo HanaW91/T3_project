@@ -438,7 +438,7 @@ plot_metric_grid <- function(summary_results, result_set, method_spec, metric_sp
   )
 
   graphics::legend(
-    "center",
+    "top",
     legend = legend_labels,
     col = line_colours[paste(legend_grid$algorithm, legend_grid$scaling_method, sep = "__")],
     pch = scaling_symbols[legend_grid$scaling_method],

@@ -497,7 +497,7 @@ run_metric_plots <- function() {
     )
 
     graphics::legend(
-      "center",
+      "top",
       legend = legend_labels,
       col = line_colours[paste(legend_grid$algorithm, legend_grid$scaling_method, sep = "__")],
       pch = scaling_symbols[legend_grid$scaling_method],
