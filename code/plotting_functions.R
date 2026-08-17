@@ -429,7 +429,7 @@ run_metric_plots <- function() {
         for (metric_index in seq_len(n_metric)) {
           row_label <- names(ev_xx_rows_to_plot)[corr_index]
 
-          panel_bottom_margin <- if (row_index == n_panel_rows) 3.4 else 2.4
+          panel_bottom_margin <- if (row_index == n_panel_rows) 4.4 else 2.4
           graphics::par(mar = c(panel_bottom_margin, 5.6, 2.2, 0.9))
 
           plot_metric_panel(
@@ -1113,7 +1113,7 @@ run_subgroup_plots <- function() {
         for (block_index in seq_along(ev_xy_blocks_to_plot)) {
           ev_xy_value <- as.numeric(ev_xy_blocks_to_plot[block_index])
 
-          panel_bottom_margin <- if (corr_index == n_corr) 3.5 else 2.0
+          panel_bottom_margin <- if (corr_index == n_corr) 4.5 else 2.0
           graphics::par(mar = c(panel_bottom_margin, 6.4, 2.6, 1.8))
 
           plot_subgroup_panel(
@@ -1172,7 +1172,7 @@ run_subgroup_plots <- function() {
           row_index <- row_index + 1
 
           for (metric_index in seq_len(n_metric)) {
-            panel_bottom_margin <- if (row_index == n_panel_rows) 3.5 else 2.0
+            panel_bottom_margin <- if (row_index == n_panel_rows) 4.5 else 2.0
             graphics::par(mar = c(panel_bottom_margin, 6.4, 2.6, 1.8))
 
             plot_subgroup_panel(

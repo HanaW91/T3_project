@@ -386,7 +386,7 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
 
   for (corr_index in seq_along(ev_xx_rows_to_plot)) {
     for (noise_index in seq_along(ev_xy_cols_to_plot)) {
-      panel_bottom_margin <- if (corr_index == n_corr) 3.6 else 2.1
+      panel_bottom_margin <- if (corr_index == n_corr) 4.6 else 2.1
       graphics::par(mar = c(panel_bottom_margin, 6.4, 2.8, 1.8))
 
       plot_f1_panel(
