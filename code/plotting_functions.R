@@ -252,7 +252,7 @@ run_metric_plots <- function() {
       type = "n",
       ylim = c(0, 1),
       xlim = range(x_values),
-      xlab = if (show_x_label) "Rarity severity" else "",
+      xlab = "",
       ylab = if (show_y_label) row_label else "",
       main = metric_label,
       xaxt = "n",
@@ -390,10 +390,14 @@ run_metric_plots <- function() {
       }
     }
 
+    x_label_id <- next_figure_id
+    next_figure_id <- next_figure_id + 1
+    layout_rows[[length(layout_rows) + 1]] <- rep(x_label_id, n_metric)
+
     legend_id <- next_figure_id
     layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
     layout_matrix <- do.call(rbind, layout_rows)
-    row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.48)
+    row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.16, 0.48)
 
     graphics::layout(layout_matrix, heights = row_heights)
     graphics::par(oma = c(0, 0, 7.2, 0))
@@ -429,7 +433,7 @@ run_metric_plots <- function() {
         for (metric_index in seq_len(n_metric)) {
           row_label <- names(ev_xx_rows_to_plot)[corr_index]
 
-          panel_bottom_margin <- if (row_index == n_panel_rows) 4.4 else 2.4
+          panel_bottom_margin <- if (row_index == n_panel_rows) 2.9 else 2.4
           graphics::par(mar = c(panel_bottom_margin, 5.6, 2.2, 0.9))
 
           plot_metric_panel(
@@ -447,6 +451,10 @@ run_metric_plots <- function() {
         }
       }
     }
+
+    graphics::par(mar = c(0, 0, 0, 0))
+    graphics::plot.new()
+    graphics::text(0.5, 0.5, labels = "Rarity severity", cex = 1.70)
 
     graphics::mtext(
       paste0(method_label, " selection performance across rarity and correlation"),
@@ -910,7 +918,7 @@ run_subgroup_plots <- function() {
       type = "n",
       ylim = c(0, 1),
       xlim = range(x_values),
-      xlab = if (show_x_label) "Rarity severity" else "",
+      xlab = "",
       ylab = if (show_y_label) row_label else "",
       main = metric_label,
       xaxt = "n",
@@ -1099,10 +1107,14 @@ run_subgroup_plots <- function() {
         layout_rows[[length(layout_rows) + 1]] <- panel_ids
       }
 
+      x_label_id <- next_figure_id
+      next_figure_id <- next_figure_id + 1
+      layout_rows[[length(layout_rows) + 1]] <- rep(x_label_id, n_blocks)
+
       legend_id <- next_figure_id
       layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_blocks)
       layout_matrix <- do.call(rbind, layout_rows)
-      row_heights <- c(rep(1, n_corr), 0.58)
+      row_heights <- c(rep(1, n_corr), 0.16, 0.58)
 
       graphics::layout(layout_matrix, heights = row_heights)
       graphics::par(oma = c(0, 0, 7.0, 1.4))
@@ -1113,7 +1125,7 @@ run_subgroup_plots <- function() {
         for (block_index in seq_along(ev_xy_blocks_to_plot)) {
           ev_xy_value <- as.numeric(ev_xy_blocks_to_plot[block_index])
 
-          panel_bottom_margin <- if (corr_index == n_corr) 4.5 else 2.0
+          panel_bottom_margin <- if (corr_index == n_corr) 2.9 else 2.0
           graphics::par(mar = c(panel_bottom_margin, 6.4, 2.6, 1.8))
 
           plot_subgroup_panel(
@@ -1131,6 +1143,10 @@ run_subgroup_plots <- function() {
           )
         }
       }
+
+      graphics::par(mar = c(0, 0, 0, 0))
+      graphics::plot.new()
+      graphics::text(0.5, 0.5, labels = "Rarity severity", cex = 1.70)
     } else {
       n_panel_rows <- n_blocks * n_corr
       layout_rows <- list()
@@ -1148,10 +1164,14 @@ run_subgroup_plots <- function() {
         }
       }
 
+      x_label_id <- next_figure_id
+      next_figure_id <- next_figure_id + 1
+      layout_rows[[length(layout_rows) + 1]] <- rep(x_label_id, n_metric)
+
       legend_id <- next_figure_id
       layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
       layout_matrix <- do.call(rbind, layout_rows)
-      row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.58)
+      row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.16, 0.58)
 
       graphics::layout(layout_matrix, heights = row_heights)
       graphics::par(oma = c(0, 0, 8.4, 1.4))
@@ -1172,7 +1192,7 @@ run_subgroup_plots <- function() {
           row_index <- row_index + 1
 
           for (metric_index in seq_len(n_metric)) {
-            panel_bottom_margin <- if (row_index == n_panel_rows) 4.5 else 2.0
+            panel_bottom_margin <- if (row_index == n_panel_rows) 2.9 else 2.0
             graphics::par(mar = c(panel_bottom_margin, 6.4, 2.6, 1.8))
 
             plot_subgroup_panel(
@@ -1191,6 +1211,10 @@ run_subgroup_plots <- function() {
           }
         }
       }
+
+      graphics::par(mar = c(0, 0, 0, 0))
+      graphics::plot.new()
+      graphics::text(0.5, 0.5, labels = "Rarity severity", cex = 1.70)
     }
 
     graphics::mtext(

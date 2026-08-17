@@ -247,7 +247,7 @@ plot_f1_panel <- function(plot_data,
     type = "n",
     ylim = c(0, 1),
     xlim = range(x_values),
-    xlab = if (show_x_label) "Rarity severity" else "",
+    xlab = "",
     ylab = if (show_y_label) row_label else "",
     main = col_label,
     xaxt = "n",
@@ -378,15 +378,16 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
   n_noise <- length(ev_xy_cols_to_plot)
   layout_matrix <- rbind(
     matrix(seq_len(n_corr * n_noise), nrow = n_corr, ncol = n_noise, byrow = TRUE),
-    rep(n_corr * n_noise + 1, n_noise)
+    rep(n_corr * n_noise + 1, n_noise),
+    rep(n_corr * n_noise + 2, n_noise)
   )
 
-  graphics::layout(layout_matrix, heights = c(rep(1, n_corr), 0.42))
+  graphics::layout(layout_matrix, heights = c(rep(1, n_corr), 0.16, 0.42))
   graphics::par(oma = c(0, 0, 6.2, 0))
 
   for (corr_index in seq_along(ev_xx_rows_to_plot)) {
     for (noise_index in seq_along(ev_xy_cols_to_plot)) {
-      panel_bottom_margin <- if (corr_index == n_corr) 4.6 else 2.1
+      panel_bottom_margin <- if (corr_index == n_corr) 2.9 else 2.1
       graphics::par(mar = c(panel_bottom_margin, 6.4, 2.8, 1.8))
 
       plot_f1_panel(
@@ -402,6 +403,10 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
       )
     }
   }
+
+  graphics::par(mar = c(0, 0, 0, 0))
+  graphics::plot.new()
+  graphics::text(0.5, 0.5, labels = "Rarity severity", cex = 1.70)
 
   graphics::mtext(
     paste0(method_spec$method_label, " F1 selection performance across rarity, noise, and correlation"),
