@@ -123,7 +123,7 @@ line_colours <- c(
   ncat_null__cont = "#2ca02c",
   ncat_null__none = "#2ca02c",
   ncat_null__zscore = "#20a386",
-  ncat_null__2sd = "#8dd3c7",
+  ncat_null__2sd = "#00796B",
   ncat_3__cont = "#CC79A7",
   ncat_3__none = "#CC79A7",
   ncat_3__zscore = "#D65F9E",
