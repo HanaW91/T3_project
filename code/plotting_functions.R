@@ -1308,9 +1308,9 @@ run_subgroup_plots <- function() {
       subgroup_spec$groups$label
     )
     n_groups <- nrow(subgroup_spec$groups)
-    table_label_x <- if (n_groups >= 3) 0.30 else 0.34
-    table_first_col_x <- if (n_groups >= 3) 0.44 else 0.48
-    table_col_step <- if (n_groups >= 3) 0.11 else 0.15
+    table_label_x <- if (n_groups >= 3) 0.36 else 0.38
+    table_first_col_x <- if (n_groups >= 3) 0.48 else 0.50
+    table_col_step <- if (n_groups >= 3) 0.08 else 0.12
     table_header_y <- if (show_algorithm_legend) 0.62 else 0.72
     table_first_row_y <- if (show_algorithm_legend) 0.43 else 0.50
     table_row_step <- 0.18
