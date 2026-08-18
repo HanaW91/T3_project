@@ -1114,7 +1114,7 @@ run_subgroup_plots <- function() {
       legend_id <- next_figure_id
       layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_blocks)
       layout_matrix <- do.call(rbind, layout_rows)
-      row_heights <- c(rep(1, n_corr), 0.16, 0.58)
+      row_heights <- c(rep(1, n_corr), 0.14, 0.40)
 
       graphics::layout(layout_matrix, heights = row_heights)
       graphics::par(oma = c(0, 0, 7.0, 1.4))
@@ -1171,7 +1171,7 @@ run_subgroup_plots <- function() {
       legend_id <- next_figure_id
       layout_rows[[length(layout_rows) + 1]] <- rep(legend_id, n_metric)
       layout_matrix <- do.call(rbind, layout_rows)
-      row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.16, 0.58)
+      row_heights <- c(rep(c(0.42, rep(1, n_corr)), n_blocks), 0.14, 0.40)
 
       graphics::layout(layout_matrix, heights = row_heights)
       graphics::par(oma = c(0, 0, 8.4, 1.4))
@@ -1184,7 +1184,7 @@ run_subgroup_plots <- function() {
 
         graphics::par(mar = c(0, 0, 0, 0))
         graphics::plot.new()
-        graphics::rect(0.01, 0.08, 0.99, 0.92, border = "grey70", lwd = 1.2)
+        graphics::rect(0.01, 0.08, 0.99, 0.92, col = "grey96", border = "grey82", lwd = 0.8)
         graphics::text(0.5, 0.5, labels = block_label, cex = 2.35, font = 2)
 
         for (corr_index in seq_along(ev_xx_rows_to_plot)) {
@@ -1262,32 +1262,35 @@ run_subgroup_plots <- function() {
     graphics::plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
 
     show_algorithm_legend <- length(method_spec$algorithms) > 1
-    scaling_legend_x <- if (show_algorithm_legend) 0.66 else 0.44
-    legend_title_y <- 0.84
-    legend_item_y <- 0.68
-    legend_row_step <- 0.16
-    legend_cex <- 1.38
+    subgroup_legend_x <- if (show_algorithm_legend) 0.10 else 0.22
+    algorithm_legend_x <- 0.36
+    scaling_legend_x <- if (show_algorithm_legend) 0.60 else 0.48
+    legend_title_y <- 0.68
+    legend_item_y <- 0.42
+    legend_row_step <- 0.18
+    legend_item_step <- 0.17
+    legend_cex <- 1.16
 
     graphics::text(
-      x = 0.03,
+      x = subgroup_legend_x,
       y = legend_title_y,
-      labels = "Subgroup",
+      labels = "Subgroup colour",
       adj = c(0, 0.5),
       cex = legend_cex
     )
     for (group_index in seq_len(nrow(subgroup_spec$groups))) {
-      row_y <- legend_item_y - (group_index - 1) * legend_row_step
+      item_x <- subgroup_legend_x + 0.08 + (group_index - 1) * legend_item_step
       graphics::segments(
-        x0 = 0.03,
-        y0 = row_y,
-        x1 = 0.08,
-        y1 = row_y,
+        x0 = item_x,
+        y0 = legend_title_y,
+        x1 = item_x + 0.030,
+        y1 = legend_title_y,
         col = subgroup_spec$groups$colour_none[group_index],
         lwd = 3.4
       )
       graphics::text(
-        x = 0.09,
-        y = row_y,
+        x = item_x + 0.040,
+        y = legend_title_y,
         labels = subgroup_spec$groups$label[group_index],
         adj = c(0, 0.5),
         cex = legend_cex
@@ -1296,7 +1299,7 @@ run_subgroup_plots <- function() {
 
     if (show_algorithm_legend) {
       graphics::text(
-        x = 0.37,
+        x = algorithm_legend_x,
         y = legend_title_y,
         labels = "Algorithm",
         adj = c(0, 0.5),
@@ -1304,19 +1307,19 @@ run_subgroup_plots <- function() {
       )
       for (algorithm_index in seq_along(method_spec$algorithms)) {
         algorithm <- method_spec$algorithms[algorithm_index]
-        row_y <- legend_item_y - (algorithm_index - 1) * legend_row_step
+        item_x <- algorithm_legend_x + 0.10 + (algorithm_index - 1) * legend_item_step
         graphics::segments(
-          x0 = 0.37,
-          y0 = row_y,
-          x1 = 0.42,
-          y1 = row_y,
+          x0 = item_x,
+          y0 = legend_title_y,
+          x1 = item_x + 0.030,
+          y1 = legend_title_y,
           col = "grey20",
           lty = algorithm_line_types[algorithm],
           lwd = 3.4
         )
         graphics::text(
-          x = 0.43,
-          y = row_y,
+          x = item_x + 0.040,
+          y = legend_title_y,
           labels = algorithm_labels[algorithm],
           adj = c(0, 0.5),
           cex = legend_cex
@@ -1332,10 +1335,12 @@ run_subgroup_plots <- function() {
       cex = legend_cex
     )
 
-    scaling_y <- legend_item_y
-    for (scaling_method in scaling_methods_to_plot) {
+    for (scaling_index in seq_along(scaling_methods_to_plot)) {
+      scaling_method <- scaling_methods_to_plot[scaling_index]
+      row_y <- legend_item_y - (scaling_index - 1) * legend_row_step
+
       for (group_index in seq_len(nrow(subgroup_spec$groups))) {
-        glyph_x <- scaling_legend_x + (group_index - 1) * 0.045
+        glyph_x <- scaling_legend_x + 0.08 + (group_index - 1) * 0.055
         glyph_colour <- subgroup_scaling_colour(
           subgroup_spec = subgroup_spec,
           group_index = group_index,
@@ -1344,29 +1349,28 @@ run_subgroup_plots <- function() {
 
         graphics::segments(
           x0 = glyph_x,
-          y0 = scaling_y,
+          y0 = row_y,
           x1 = glyph_x + 0.028,
-          y1 = scaling_y,
+          y1 = row_y,
           col = glyph_colour,
           lwd = 3.4
         )
         graphics::points(
           x = glyph_x + 0.014,
-          y = scaling_y,
+          y = row_y,
           col = glyph_colour,
           pch = scaling_symbols[scaling_method],
-          cex = 1.40
+          cex = 1.15
         )
       }
 
       graphics::text(
-        x = scaling_legend_x + nrow(subgroup_spec$groups) * 0.045 + 0.02,
-        y = scaling_y,
+        x = scaling_legend_x + 0.08 + nrow(subgroup_spec$groups) * 0.055 + 0.018,
+        y = row_y,
         labels = scaling_labels[scaling_method],
         adj = c(0, 0.5),
         cex = legend_cex
       )
-      scaling_y <- scaling_y - legend_row_step
     }
 
     invisible(output_file)
