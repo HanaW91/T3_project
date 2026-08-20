@@ -75,7 +75,7 @@ for (dir in c(main_plot_dir, appendix_plot_dir)) {
   }
 }
 
-pk_imbalance_fraction_to_plot <- 0.2
+pk_imbalance_fraction_to_plot <- 0.5
 
 ev_xy_cols <- c(
   `Low noise\n(evxy = 0.5)` = 0.5,

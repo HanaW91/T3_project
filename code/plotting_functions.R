@@ -62,7 +62,7 @@ run_metric_plots <- function() {
     dir.create(plot_dir, recursive = TRUE)
   }
 
-  pk_imbalance_fractions_to_plot <- c(0.2)
+  pk_imbalance_fractions_to_plot <- c(0.5)
   pk_imbalance_fraction_to_plot <- NULL
   current_result_label <- NULL
   binary_fraction_to_plot <- NULL
@@ -627,7 +627,7 @@ run_subgroup_plots <- function() {
     dir.create(plot_dir, recursive = TRUE)
   }
 
-  pk_imbalance_fractions_to_plot <- c(0.2)
+  pk_imbalance_fractions_to_plot <- c(0.5)
   ev_xy_blocks <- c(
     `Low noise\n(evxy = 0.5)` = 0.5,
     `Medium noise\n(evxy = 0.2)` = 0.2,

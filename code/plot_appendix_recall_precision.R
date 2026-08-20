@@ -66,7 +66,7 @@ if (!dir.exists(plot_dir)) {
   dir.create(plot_dir, recursive = TRUE)
 }
 
-pk_imbalance_fraction_to_plot <- 0.2
+pk_imbalance_fraction_to_plot <- 0.5
 
 ev_xy_cols <- c(
   `Low noise\n(evxy = 0.5)` = 0.5,
