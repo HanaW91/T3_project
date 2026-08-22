@@ -134,7 +134,7 @@ format_file_value <- function(value) {
   gsub("\\.", "_", format(value, trim = TRUE, scientific = FALSE))
 }
 
-mean_ci <- function(values) {
+median_iqr <- function(values) {
   values <- values[!is.na(values)]
   n_values <- length(values)
 
@@ -142,14 +142,18 @@ mean_ci <- function(values) {
     return(c(median = NA_real_, iqr_low = NA_real_, iqr_high = NA_real_, n = 0))
   }
 
-  mean_value <- mean(values)
-  standard_error <- if (n_values > 1) stats::sd(values) / sqrt(n_values) else 0
-  ci_width <- 1.96 * standard_error
+  median_value <- stats::median(values)
+  iqr_bounds <- stats::quantile(
+    values,
+    probs = c(0.25, 0.75),
+    names = FALSE,
+    type = 7
+  )
 
   c(
-    median = mean_value,
-    iqr_low = max(0, mean_value - ci_width),
-    iqr_high = min(1, mean_value + ci_width),
+    median = median_value,
+    iqr_low = max(0, iqr_bounds[1]),
+    iqr_high = min(1, iqr_bounds[2]),
     n = n_values
   )
 }
@@ -167,7 +171,7 @@ summarise_f1 <- function(data) {
   )
 
   rows <- lapply(split(data, split_keys), function(piece) {
-    stats <- mean_ci(piece$f1_score)
+    stats <- median_iqr(piece$f1_score)
 
     data.frame(
       algorithm = piece$algorithm[1],
@@ -421,7 +425,7 @@ plot_f1_grid <- function(summary_results, result_set, method_spec) {
       paste(algorithm_labels[method_spec$algorithms], collapse = " and "),
       "; pk imbalance = ",
       pk_imbalance_fraction_to_plot,
-      "; lines show mean; ribbons show 95% CI over seeds"
+      "; lines show median; ribbons show IQR over seeds"
     ),
     outer = TRUE,
     side = 3,
