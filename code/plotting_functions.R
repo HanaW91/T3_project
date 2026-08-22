@@ -133,7 +133,7 @@ run_metric_plots <- function() {
     scaling_levels
   }
 
-  mean_ci <- function(values) {
+  mean_empirical_95 <- function(values) {
     values <- values[!is.na(values)]
     n_values <- length(values)
 
@@ -142,13 +142,17 @@ run_metric_plots <- function() {
     }
 
     mean_value <- mean(values)
-    standard_error <- if (n_values > 1) stats::sd(values) / sqrt(n_values) else 0
-    ci_width <- 1.96 * standard_error
+    interval_bounds <- stats::quantile(
+      values,
+      probs = c(0.025, 0.975),
+      names = FALSE,
+      type = 7
+    )
 
     c(
       median = mean_value,
-      iqr_low = max(0, mean_value - ci_width),
-      iqr_high = min(1, mean_value + ci_width),
+      iqr_low = max(0, interval_bounds[1]),
+      iqr_high = min(1, interval_bounds[2]),
       n = n_values
     )
   }
@@ -166,7 +170,7 @@ run_metric_plots <- function() {
     )
 
     summary_rows <- lapply(split(data, split_keys), function(piece) {
-      stats <- mean_ci(piece[[metric]])
+      stats <- mean_empirical_95(piece[[metric]])
 
       data.frame(
         algorithm = piece$algorithm[1],
@@ -471,7 +475,7 @@ run_metric_plots <- function() {
         binary_fraction_to_plot,
         "; pk imbalance = ",
         pk_imbalance_fraction_to_plot,
-        "; lines show mean; ribbons show 95% CI over seeds"
+        "; lines show mean; ribbons show empirical 95% interval over seeds"
       ),
       outer = TRUE,
       side = 3,
@@ -757,7 +761,7 @@ run_subgroup_plots <- function() {
     subgroup_spec$groups[[colour_column]][group_index]
   }
 
-  mean_ci <- function(values) {
+  mean_empirical_95 <- function(values) {
     values <- values[!is.na(values)]
     n_values <- length(values)
 
@@ -766,13 +770,17 @@ run_subgroup_plots <- function() {
     }
 
     mean_value <- mean(values)
-    standard_error <- if (n_values > 1) stats::sd(values) / sqrt(n_values) else 0
-    ci_width <- 1.96 * standard_error
+    interval_bounds <- stats::quantile(
+      values,
+      probs = c(0.025, 0.975),
+      names = FALSE,
+      type = 7
+    )
 
     c(
       median = mean_value,
-      iqr_low = max(0, mean_value - ci_width),
-      iqr_high = min(1, mean_value + ci_width),
+      iqr_low = max(0, interval_bounds[1]),
+      iqr_high = min(1, interval_bounds[2]),
       n = n_values
     )
   }
@@ -814,7 +822,7 @@ run_subgroup_plots <- function() {
           metric_values <- rep(NA_real_, length(metric_values))
         }
 
-        stats <- mean_ci(metric_values)
+        stats <- mean_empirical_95(metric_values)
 
         data.frame(
           algorithm = piece$algorithm[1],
@@ -1241,7 +1249,7 @@ run_subgroup_plots <- function() {
         result_set$label,
         "; pk imbalance = ",
         pk_imbalance_fraction,
-        "; lines show mean; ribbons show 95% CI over seeds"
+        "; lines show mean; ribbons show empirical 95% interval over seeds"
       ),
       outer = TRUE,
       side = 3,
