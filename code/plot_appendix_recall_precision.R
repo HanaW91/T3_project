@@ -133,7 +133,7 @@ format_file_value <- function(value) {
   gsub("\\.", "_", format(value, trim = TRUE, scientific = FALSE))
 }
 
-mean_empirical_95 <- function(values) {
+median_iqr <- function(values) {
   values <- values[!is.na(values)]
   n_values <- length(values)
 
@@ -141,18 +141,18 @@ mean_empirical_95 <- function(values) {
     return(c(median = NA_real_, iqr_low = NA_real_, iqr_high = NA_real_, n = 0))
   }
 
-  mean_value <- mean(values)
-  interval_bounds <- stats::quantile(
+  median_value <- stats::median(values)
+  iqr_bounds <- stats::quantile(
     values,
-    probs = c(0.025, 0.975),
+    probs = c(0.25, 0.75),
     names = FALSE,
     type = 7
   )
 
   c(
-    median = mean_value,
-    iqr_low = max(0, interval_bounds[1]),
-    iqr_high = min(1, interval_bounds[2]),
+    median = median_value,
+    iqr_low = max(0, iqr_bounds[1]),
+    iqr_high = min(1, iqr_bounds[2]),
     n = n_values
   )
 }
@@ -170,7 +170,7 @@ summarise_metric <- function(data, metric) {
   )
 
   rows <- lapply(split(data, split_keys), function(piece) {
-    stats <- mean_empirical_95(piece[[metric]])
+    stats <- median_iqr(piece[[metric]])
 
     data.frame(
       algorithm = piece$algorithm[1],
@@ -416,7 +416,7 @@ plot_metric_grid <- function(summary_results, result_set, method_spec, metric_sp
       paste(algorithm_labels[method_spec$algorithms], collapse = " and "),
       "; pk imbalance = ",
       pk_imbalance_fraction_to_plot,
-      "; lines show mean; ribbons show empirical 95% interval over seeds"
+      "; lines show median; ribbons show IQR over seeds"
     ),
     outer = TRUE,
     side = 3,
